@@ -13,7 +13,7 @@ model.add(Flatten())
 model.add(Dense(2, activation="softmax"))
 
 model.compile(optimizer=tf.train.AdamOptimizer(0.001),
-                  loss=tf.keras.losses.binary_crossentropy,
+                  loss=tf.keras.losses.categorical_crossentropy,
                   metrics=[tf.keras.metrics.categorical_accuracy])
 
 record_count = 0
@@ -39,5 +39,5 @@ while (line):
 print("shape:", data.shape)
 data = np.expand_dims(data,axis=2)
 print("shape:", data.shape)
-model.fit(data, labels, epochs=30, batch_size=record_count)
+model.fit(data, labels, epochs=1, batch_size=record_count)
 
