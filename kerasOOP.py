@@ -7,26 +7,37 @@ from tensorflow.keras import backend as K
 from tensorflow.keras import metrics
 from sklearn.model_selection import KFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
+import signal
+
+class GracefulKiller:
+  kill_now = False
+  def __init__(self):
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self,signum, frame):
+    self.kill_now = True
+
 
 class ann_data(object):
     def __init__(self):
         self.dataPath = ""
         self.outputPath = ""
 
-    def readData(self):
+    def readData(self, fname="input002.csv"):
         record_count = 0
-        with open("input002.csv") as f:
+        with open(fname) as f:
             for line in f:
                 if (line.strip()):
                     record_count += 1
-        f = open("input002.csv")
+        f = open(fname)
         line = f.readline().strip()
         data = np.zeros((record_count,3000))
         labels = np.zeros((record_count,2))
         sample = 0
         while (line):
             arow = line.split(",")
-            labels[sample][1 if arow[0] == 'R' else 0] = 1
+            labels[sample][0 if arow[0] == 'R' else 1] = 1
             measure_count = 0
             for ame in arow[1:]:
                 data[sample][measure_count] = ame
@@ -43,45 +54,11 @@ class keras_ann(object):
         self.dataPath = ""
         self.outputPath = ""
         self.inputShape = (3000,1)
-        self.metric_Obj = ann_data()
+        self.killer = GracefulKiller()
 
-    def f1_score(self, y_true, y_pred):
-        #y_true = get_value(y_true_tf)
-        #y_pred = get_value(y_pred_tf)
-        #true_neg = 0
-        #true_pos = 0
-        #false_neg = 0
-        #flase_pos = 0
-        #for i in range(y_true.shape[0]):
-        #    true = np.argmax(y_true[i])
-        #    pred = np.argmax(y_pred[i])
-        #    if (pred == 1):
-        #        if (true == pred):
-        #            true_pos += 1
-        #        else:
-        #            false_pos += 1
-        #    else:
-        #        if (true == pred):
-        #            true_neg += 1
-        #        else:
-        #            false_neg += 1
-        #precision = true_pos/(true_pos+false_pos)
-        #recall = true_pos/(true_pos+false_neg)        
-        #f1_score =  2 * ((precision*recall)/(precision+recall))
-        ##f1_score, update_op = tf.contrib.metrics.f1_score(y_true_tf,y_pred_tf)
-        #return to_dense(f1_score)
-
-        #=============
-        # SOURCE:
-        # https://stackoverflow.com/questions/43547402/how-to-calculate-f1-macro-in-keras
-        #=============
-        
-        true_pos = K.sum(K.round(K.clip(y_true*y_pred,0,1)))
-        poss_pos = K.sum(K.round(K.clip(y_true,0,1)))
-        recall = true_pos / (poss_pos + K.epsilon())
-        pred_pos = K.sum(K.round(K.clip(y_true,0,1)))
-        precision = true_pos/(pred_pos + K.epsilon())
-        f1_score =  2 * ((precision*recall)/(precision+recall+K.epsilon()))
+    def updatePaths(self, dataPath = '', outputPath = ''):
+        self.outputPath = outputPath
+        self.dataPath = dataPath
         
     def convModel(self, modelArgs=[
         {
@@ -117,6 +94,9 @@ class keras_ann(object):
         elif (modelArg['layer'] == 'dense'):
                 model.add(Dense(activation=modelArg['activation'], input_shape=self.inputShape))
             
+        #
+        # For all other layers
+        #
         for modelArg in modelArgs[1:]:
             if (modelArg['layer'] == 'conv1d'):
                 model.add(Conv1D(filters=modelArg['no_filters'], kernel_size=modelArg['kernal_size'], activation=modelArg['activation'])) #shape batch, steps, channels
@@ -134,23 +114,14 @@ class keras_ann(object):
                                            strides=modelArg['strides'],
                                            padding=modelArg['padding']))
             elif (modelArg['layer'] == 'compile'):
-                for i in range(len(modelArg['metrics'])):
-                    if (modelArg['metrics'][i] == 'f1score'):
-                        modelArg['metrics'][i] = self.f1_score
-                        break
+                #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
                 model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
-                    loss=modelArg['loss'], #tf.keras.losses.categorical_crossentropy,
-                    metrics=[metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
-        #model.add(Conv1D(filters=no_filters[0], kernel_size=10, activation="relu", input_shape=self.inputShape)) #shape batch, steps, channels
-        #model.add(Conv1D(filters=no_filters[1], kernel_size=10, activation="relu"))
-        #model.add(Flatten())
-        #model.add(Dense(2, activation="softmax"))
-        #model.compile(optimizer='adam', #tf.train.AdamOptimizer(0.001),
-        #            loss='categorical_crossentropy', #tf.keras.losses.categorical_crossentropy,
-        #            metrics=['acc']) #tf.keras.metrics.categorical_accuracy
+                    loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+                    #metrics=['acc']) #metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
+                
         return model
 
-    def parameterSearch(self, paramSets, X, Y, numSplits):
+    def parameterSearch(self, paramSets, X, Y, numSplits=2,valData=None, epochs=1, batchSize=None):
         # create CV dat LOOV 
         #numSplits = 2
         Kf = KFold(n_splits=numSplits)
@@ -158,13 +129,12 @@ class keras_ann(object):
         # make a model
         #
         #X = [0,1,2,3,4,5,6,7,8,9]
-        modelFile = open("fileModel.csv", 'w')
-        resultFile = open("fileResult.csv",'w')
-        resultFile.write("modelNum|True Neg|False Neg|True Pos|False Pos|F1_score|Acc\n")
+        modelFile = open(self.outputPath + "fileModel.csv", 'w')
+        resultFile = open(self.outputPath + "fileResult.csv",'w')
+        resultFile.write("modelNum|True REM|False NonREM|False REM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n")
         modelNum = 0
         for paramSet in paramSets:
             #print(paramSet)
-            
             modelFile.write(str(modelNum) + "|")
             json.dump(paramSet, modelFile)
             modelFile.write("\n")
@@ -174,30 +144,55 @@ class keras_ann(object):
                 model = self.convModel(paramSet)            
                 j = 0
                 for trainInd, testInd in Kf.split(X):
-                    model.fit(X[trainInd], Y[trainInd], batch_size=None, verbose=0)
+                    model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_data=valData, epochs=epochs)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
-                    for pred in np.argmax(model.predict(X[testInd]), axis=1):
+                    for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):
                         Ypred[Yi][pred] = 1
                         Yi += 1
 
-                    #print(Y[testInd], Ypred)
-                    confusionMatrix = multilabel_confusion_matrix(Y[testInd], Ypred)
+                    
+                    #NOTE: 
+                    confusionMatrix = multilabel_confusion_matrix(Y[testInd], Ypred)[0]
+                    #print(confusionMatrix)
                     #confusionMatrix = confusion_matrix(np.argmax(Y[testInd], axis=1), np.argmax(Ypred, axis=1))
                     #print(confusionMatrix)
                     #print('f1_score:',f1_score(Y[testInd], Ypred, average='macro'))
                     resultFile.write(str(modelNum) + "|")
-                    for row in confusionMatrix:
-                        for el in row:
-                            resultFile.write(str(el) + "|")
-
-                    resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
+                    #for row in confusionMatrix:
+                    #    for el in row:
+                    #        resultFile.write(str(el) + "|")
+                    #"modelNum|True REM|False NonREM|False REM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n"
+                    tn = confusionMatrix[0][0]
+                    fn = confusionMatrix[1][0]
+                    tp = confusionMatrix[1][1]
+                    fp = confusionMatrix[0][1]
+                    acc=sens=spec=prec=rec=f1=0
+                    acc=(tp+tn)/(tp+tn+fp+fn)
+                    if (tp+fn > 0):
+                        sens=tp/(tp+fn)
+                    if (tn+fp > 0):
+                        spec=tn/(tn+fp)
+                    if (tp+fp > 0):
+                        prec=tp/(tp+fp)
+                    if (tp+fn > 0):
+                        rec=tp/(tp+fn)
+                    if (prec+rec > 0):
+                        f1=2*((prec*rec)/(prec+rec))
+                    resultFile.write(f"{tp:.3f}|{fn:.3f}|{fp:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}\n")
+                    #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
                 
                     j+=1
             
             except (Exception):
                 resultFile.write("error\n")
             modelNum+=1
+            
+            if self.killer.kill_now:
+                resultFile.write("killed\n")
+                print("killed")
+                break
+            
         modelFile.close()
         resultFile.close()
 
