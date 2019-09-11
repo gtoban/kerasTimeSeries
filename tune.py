@@ -13,13 +13,13 @@ def main():
 
     data,labels,recordCount = myData.readData()
     overfitData, overfitLabels, overfitRecordCount = myData.readData(fname="input142.csv")
-    data = data[:100] 
-    labels = labels[:100] 
+    #data = data[:100] 
+    #labels = labels[:100] 
     
     modelArgs = getModels()
     addToModels(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
-    myAnn.parameterSearch(modelArgs,data,labels,numSplits=2,valData=(overfitData,overfitLabels), epochs=1, batchSize=int(recordCount/10)+1)
+    myAnn.parameterSearch(modelArgs,data,labels,numSplits=10,valData=(overfitData,overfitLabels), epochs=10, batchSize=int(recordCount/10)+1)
     
 
 def addToModels(modelArgs):
