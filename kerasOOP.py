@@ -8,6 +8,8 @@ from tensorflow.keras import metrics
 from sklearn.model_selection import KFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
 import signal
+import sys
+
 
 class GracefulKiller:
   kill_now = False
@@ -17,8 +19,7 @@ class GracefulKiller:
 
   def exit_gracefully(self,signum, frame):
     self.kill_now = True
-
-
+    
 class ann_data(object):
     def __init__(self):
         self.dataPath = ""
@@ -124,6 +125,7 @@ class keras_ann(object):
     def parameterSearch(self, paramSets, X, Y, numSplits=2,valData=None, epochs=1, batchSize=None):
         # create CV dat LOOV 
         #numSplits = 2
+        
         Kf = KFold(n_splits=numSplits)
         #for each parameter set
         # make a model
@@ -138,7 +140,7 @@ class keras_ann(object):
             modelFile.write(str(modelNum) + "|")
             json.dump(paramSet, modelFile)
             modelFile.write("\n")
-            
+            print("\n\n=================\nTesting Model " + str(modelNum) + "\n=================\n", flush=True)
             
             try:
                 model = self.convModel(paramSet)            
@@ -152,21 +154,32 @@ class keras_ann(object):
                         Yi += 1
 
                     
-                    #NOTE: 
+                    #NOTE:
                     confusionMatrix = multilabel_confusion_matrix(Y[testInd], Ypred)[0]
-                    #print(confusionMatrix)
-                    #confusionMatrix = confusion_matrix(np.argmax(Y[testInd], axis=1), np.argmax(Ypred, axis=1))
-                    #print(confusionMatrix)
-                    #print('f1_score:',f1_score(Y[testInd], Ypred, average='macro'))
-                    resultFile.write(str(modelNum) + "|")
-                    #for row in confusionMatrix:
-                    #    for el in row:
-                    #        resultFile.write(str(el) + "|")
-                    #"modelNum|True REM|False NonREM|False REM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n"
-                    tn = confusionMatrix[0][0]
-                    fn = confusionMatrix[1][0]
-                    tp = confusionMatrix[1][1]
-                    fp = confusionMatrix[0][1]
+                    ##print(confusionMatrix)
+                    ##confusionMatrix = confusion_matrix(np.argmax(Y[testInd], axis=1), np.argmax(Ypred, axis=1))
+                    ##print(confusionMatrix)
+                    ##print('f1_score:',f1_score(Y[testInd], Ypred, average='macro'))
+                    #resultFile.write(str(modelNum) + "|")
+                    ##for row in confusionMatrix:
+                    ##    for el in row:
+                    ##        resultFile.write(str(el) + "|")
+                    ##"modelNum|True REM|False NonREM|False REM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n"
+                    #
+                    #tn = confusionMatrix[0][0]
+                    #fn = confusionMatrix[1][0]
+                    #tp = confusionMatrix[1][1]
+                    #fp = confusionMatrix[0][1]
+
+                    #tp=tn=fn=fp=0
+                    #Yi= 0
+                    #for y in Y[testInd]:
+                    #    tp += Y[Yi][0]*y[0]
+                    #    fp += max(Y[Yi][0]-y[0],0)
+                    #    tn += Y[Yi][1]*y[1]
+                    #    fn += max(Y[Yi][1]-y[1],0)
+                    #    Yi+=1
+                       
                     acc=sens=spec=prec=rec=f1=0
                     acc=(tp+tn)/(tp+tn+fp+fn)
                     if (tp+fn > 0):
