@@ -23,7 +23,8 @@ def main():
         labels = labels[:100] 
         myAnn.parameterSearch(modelArgs[:10],data,labels,numSplits=2,valData=(overfitData,overfitLabels), epochs=1, batchSize=None)
     else:
-        myAnn.parameterSearch(modelArgs,data,labels,numSplits=10,valData=(overfitData,overfitLabels), epochs=10, batchSize=int(recordCount/10)+1)
+        cvFolds = 10
+        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds,valData=(overfitData,overfitLabels), epochs=10, batchSize=int((recordCount/cvFolds)/10)+1)
     
 
 def addToModels(modelArgs):

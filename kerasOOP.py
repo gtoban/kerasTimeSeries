@@ -149,6 +149,7 @@ class keras_ann(object):
                 model = self.convModel(paramSet)            
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
+                    
                     model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_data=valData, epochs=epochs)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
