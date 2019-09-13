@@ -21,9 +21,9 @@ class GracefulKiller:
     self.kill_now = True
     
 class ann_data(object):
-    def __init__(self):
-        self.dataPath = ""
-        self.outputPath = ""
+    def __init__(self,dataPath="",outputPath=""):
+        self.dataPath = dataPath
+        self.outputPath = outputPath
 
     def readData(self, fnames=["input002.csv","input142.csv"]):
         record_count = 0
@@ -131,7 +131,7 @@ class keras_ann(object):
                 
         return model
 
-    def parameterSearch(self, paramSets, X, Y, numSplits=2,valData=None, epochs=1, batchSize=None):
+    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None):
         # create CV dat LOOV 
         #numSplits = 2
         
@@ -156,7 +156,7 @@ class keras_ann(object):
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     
-                    model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_data=valData, epochs=epochs)
+                    model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):

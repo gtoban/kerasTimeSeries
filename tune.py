@@ -9,23 +9,31 @@ import os
 
 def main():
     myAnn = keras_ann()
-    myData = ann_data()
-
-    data,labels,recordCount = myData.readData()
-    overfitData, overfitLabels, overfitRecordCount = myData.readData(fname="input142.csv")
-
+    myData = ann_data(dataPath="/nfshome/gst2d/eegData/")
+    
     modelArgs = getModels()
     addToModels(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
+
     testing = True
     if (testing):
+        #use default data: input002, input142
+        data,labels,recordCount = myData.readData()
         data = data[:100] 
         labels = labels[:100] 
-        myAnn.parameterSearch(modelArgs[:10],data,labels,numSplits=2,valData=(overfitData,overfitLabels), epochs=1, batchSize=None)
+        myAnn.parameterSearch(modelArgs[:10],data,labels,valSplit=0.10)
     else:
+        data,labels,recordCount = myData.readData(fnames=inputData())
         cvFolds = 10
-        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds,valData=(overfitData,overfitLabels), epochs=10, batchSize=int((recordCount/cvFolds)/10)+1)
-    
+        valPerc = 0.10
+        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds, valSplit=valPerc, epochs=10, batchSize=int(((recordCount*(1-valPerc))/cvFolds)+1))
+
+def inputData():
+    #this is the entire list
+    #return np.array("input001.csv,input002.csv,input011.csv,input012.csv,input031.csv,input032.csv,input041.csv,input042.csv,input081.csv,input082.csv,input091.csv,input101.csv,input112.csv,input142.csv,input151.csv,input152.csv,input161.csv,input162.csv,input171.csv,input172.csv".split-(","))
+    #These choices were made by which ones had the most REM
+    return np.array("input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(","))
+
 
 def addToModels(modelArgs):
     #low freq to high freq
