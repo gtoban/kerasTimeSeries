@@ -25,31 +25,37 @@ class ann_data(object):
         self.dataPath = ""
         self.outputPath = ""
 
-    def readData(self, fname="input002.csv"):
+    def readData(self, fnames=["input002.csv","input142.csv"]):
         record_count = 0
-        with open(fname) as f:
-            for line in f:
-                if (line.strip()):
-                    record_count += 1
-        f = open(fname)
-        line = f.readline().strip()
-        data = np.zeros((record_count,3000))
-        labels = np.zeros((record_count,2))
+        for fname in fnames:
+            with open(self.dataPath + fname) as f:
+                for line in f: 
+                    if (line.strip()):
+                        record_count += 1
         sample = 0
-        RVNR = [0,0]
-        while (line):
-            arow = line.split(",")
-            labels[sample][0 if arow[0] == 'R' else 1] = 1
-            RVNR[0 if arow[0] == 'R' else 1] += 1
-            measure_count = 0
-            for ame in arow[1:]:
-                data[sample][measure_count] = ame
-    
-            sample += 1
-            line = f.readline().strip()
+        for fname in fnames:
+            data = np.zeros((record_count,3000))
+            labels = np.zeros((record_count,2))
 
+            RVNR = [0,0]
+            f = open(self.dataPath + fname)
+            line = f.readline().strip()
+            while(line):
+                arow = line.split(",")
+                labels[sample][0 if arow[0] == 'R' else 1] = 1
+                RVNR[0 if arow[0] == 'R' else 1] += 1
+                measure_count = 0
+                for ame in arow[1:]:
+                    data[sample][measure_count] = ame
+    
+                sample += 1
+                line = f.readline().strip()
+            f.close()
+            print(f"{fname} -> REM: {RVNR[0]}; NonREM: {RVNR[1]}")
+            
+                    
         data = np.expand_dims(data,axis=2)
-        print(f"{fname} -> REM: {RVNR[0]}; NonREM: {RVNR[1]}")
+        
         #print("shape:", data.shape)
         return data, labels, record_count
     
