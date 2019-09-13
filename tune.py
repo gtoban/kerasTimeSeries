@@ -13,7 +13,7 @@ def main():
 
     data,labels,recordCount = myData.readData()
     overfitData, overfitLabels, overfitRecordCount = myData.readData(fname="input142.csv")
-        
+
     modelArgs = getModels()
     addToModels(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")

@@ -5,7 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D
 from tensorflow.keras import backend as K
 from tensorflow.keras import metrics
-from sklearn.model_selection import KFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
 import signal
 import sys
@@ -36,9 +36,11 @@ class ann_data(object):
         data = np.zeros((record_count,3000))
         labels = np.zeros((record_count,2))
         sample = 0
+        RVNR = [0,0]
         while (line):
             arow = line.split(",")
             labels[sample][0 if arow[0] == 'R' else 1] = 1
+            RVNR[0 if arow[0] == 'R' else 1] += 1
             measure_count = 0
             for ame in arow[1:]:
                 data[sample][measure_count] = ame
@@ -47,6 +49,7 @@ class ann_data(object):
             line = f.readline().strip()
 
         data = np.expand_dims(data,axis=2)
+        print(f"{fname} -> REM: {RVNR[0]}; NonREM: {RVNR[1]}")
         #print("shape:", data.shape)
         return data, labels, record_count
     
@@ -126,14 +129,14 @@ class keras_ann(object):
         # create CV dat LOOV 
         #numSplits = 2
         
-        Kf = KFold(n_splits=numSplits)
+        Kf = StratifiedKFold(n_splits=numSplits)
         #for each parameter set
         # make a model
         #
         #X = [0,1,2,3,4,5,6,7,8,9]
         modelFile = open(self.outputPath + "fileModel.csv", 'w')
         resultFile = open(self.outputPath + "fileResult.csv",'w')
-        resultFile.write("modelNum|True REM|False NonREM|False REM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n")
+        resultFile.write("modelNum|True REM|False REM|False NonREM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n")
         modelNum = 0
         for paramSet in paramSets:
             #print(paramSet)
@@ -145,7 +148,7 @@ class keras_ann(object):
             try:
                 model = self.convModel(paramSet)            
                 j = 0
-                for trainInd, testInd in Kf.split(X):
+                for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_data=valData, epochs=epochs)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
@@ -155,7 +158,7 @@ class keras_ann(object):
 
                     
                     #NOTE:
-                    confusionMatrix = multilabel_confusion_matrix(Y[testInd], Ypred)[0]
+                    #confusionMatrix = multilabel_confusion_matrix(Y[testInd], Ypred)[0]
                     ##print(confusionMatrix)
                     ##confusionMatrix = confusion_matrix(np.argmax(Y[testInd], axis=1), np.argmax(Ypred, axis=1))
                     ##print(confusionMatrix)
@@ -171,14 +174,14 @@ class keras_ann(object):
                     #tp = confusionMatrix[1][1]
                     #fp = confusionMatrix[0][1]
 
-                    #tp=tn=fn=fp=0
-                    #Yi= 0
-                    #for y in Y[testInd]:
-                    #    tp += Y[Yi][0]*y[0]
-                    #    fp += max(Y[Yi][0]-y[0],0)
-                    #    tn += Y[Yi][1]*y[1]
-                    #    fn += max(Y[Yi][1]-y[1],0)
-                    #    Yi+=1
+                    tp=tn=fn=fp=0
+                    Yi= 0
+                    for y in Y[testInd]:
+                        tp += Ypred[Yi][0]*y[0]
+                        fp += max(Ypred[Yi][0]-y[0],0)
+                        tn += Ypred[Yi][1]*y[1]
+                        fn += max(Ypred[Yi][1]-y[1],0)
+                        Yi+=1
                        
                     acc=sens=spec=prec=rec=f1=0
                     acc=(tp+tn)/(tp+tn+fp+fn)
@@ -192,13 +195,15 @@ class keras_ann(object):
                         rec=tp/(tp+fn)
                     if (prec+rec > 0):
                         f1=2*((prec*rec)/(prec+rec))
-                    resultFile.write(f"{tp:.3f}|{fn:.3f}|{fp:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}\n")
+                    resultFile.write(f"{modelNum}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}\n")
                     #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
                 
                     j+=1
             
-            except (Exception):
+            except Exception as e:
                 resultFile.write("error\n")
+                print(str(e))
+                
             modelNum+=1
             
             if self.killer.kill_now:
