@@ -20,13 +20,29 @@ def main():
         #use default data: input002, input142
         data,labels,recordCount = myData.readData()
         data = data[:100] 
-        labels = labels[:100] 
+        labels = labels[:100]
+        dataFiles = ",".join(inputData())
+        cvFolds = 10
+        valPerc = 0.10
+        epochs = 10
+        batchSize =int(((recordCount*(1-valPerc))/cvFolds)+1)
+        with open("fileTrainTestParams.txt",'w') as params:
+            params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
+            params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
+            params.write(f"batchSize: {batchSize}\n")
         myAnn.parameterSearch(modelArgs[:10],data,labels,valSplit=0.10)
     else:
         data,labels,recordCount = myData.readData(fnames=inputData())
+        dataFiles = ",".join(inputData())
         cvFolds = 10
         valPerc = 0.10
-        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds, valSplit=valPerc, epochs=10, batchSize=int(((recordCount*(1-valPerc))/cvFolds)+1))
+        epochs = 10
+        batchSize =int(((recordCount*(1-valPerc))/cvFolds)+1)
+        with open("fileTrainTestParams.txt",'w') as params:
+            params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
+            params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
+            params.write(f"batchSize: {batchSize}\n")
+        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
 
 def inputData():
     #this is the entire list
