@@ -10,6 +10,7 @@ import os
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
+numOfInputFiles = 8
 def main():
     myAnn = keras_ann()
     myData = ann_data(dataPath="/nfshome/gst2d/eegData/")
@@ -51,7 +52,7 @@ def inputData():
     #this is the entire list
     #return np.array("input001.csv,input002.csv,input011.csv,input012.csv,input031.csv,input032.csv,input041.csv,input042.csv,input081.csv,input082.csv,input091.csv,input101.csv,input112.csv,input142.csv,input151.csv,input152.csv,input161.csv,input162.csv,input171.csv,input172.csv".split-(","))
     #These choices were made by which ones had the most REM
-    return np.array("input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(","))
+    return np.array("input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")[:numOfInputFiles])
 
 
 def addToModels(modelArgs):
