@@ -7,11 +7,14 @@ from sklearn.model_selection import RandomizedSearchCV
 from kerasOOP import keras_ann, ann_data
 import os
 
+
+#NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
+smallModelOnly = True
 def main():
     myAnn = keras_ann()
     myData = ann_data(dataPath="/nfshome/gst2d/eegData/")
     
-    modelArgs = getModels()
+    modelArgs = [] #getModels() small models only for now!
     addToModels(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
 
@@ -202,7 +205,10 @@ def addToModels(modelArgs):
             'loss': 'categorical_crossentropy',
             'metrics':['acc']
         })
-    
+
+    if smallModelOnly:
+        return
+        
     #Mix and match features randomly (5 convolution layers (order: 5->120, 4->120, 3->60, 2->20, total->320), maxPooling (5) (1600), number of dense layers (1-5) etc (nodes: 50,100,200,400,500,800))
     possibleNumOfNodes = [50,100,200,400,500,800]
     possiblePoolSize = [5,10,20,40,80]
@@ -341,6 +347,7 @@ def getModels():
             'metrics':['acc']
         }])
 
+    #THIS ONE IS TO BIG TO TRAIN ON ORION00
     #Real-time human activity recognition from accelerometer data using CNN
     modelArgs.append(
         [
