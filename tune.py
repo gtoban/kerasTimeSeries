@@ -23,7 +23,8 @@ def main():
     if (testing):
         #use default data: input002, input142
         data,labels,recordCount = myData.readData()
-        data = data[:100] 
+        data = data[:100]
+        print(data.shape)
         labels = labels[:100]
         dataFiles = ",".join(inputData())
         cvFolds = 10
@@ -34,6 +35,8 @@ def main():
             params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
             params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
             params.write(f"batchSize: {batchSize}\n")
+        myAnn.buildModelStack(data,labels)
+        return
         myAnn.parameterSearch(modelArgs[:10],data,labels,valSplit=0.10)
     else:
         data,labels,recordCount = myData.readData(fnames=inputData())

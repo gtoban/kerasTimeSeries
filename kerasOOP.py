@@ -1,8 +1,8 @@
 import numpy as np
 import json
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Input, Concatenate
 from tensorflow.keras import backend as K
 from tensorflow.keras import metrics
 from sklearn.model_selection import StratifiedKFold
@@ -56,7 +56,7 @@ class ann_data(object):
                     
         data = np.expand_dims(data,axis=2)
         
-        #print("shape:", data.shape)
+        print("shape:", data.shape)
         return data, labels, record_count
     
 class keras_ann(object):
@@ -221,4 +221,93 @@ class keras_ann(object):
         modelFile.close()
         resultFile.close()
 
+    def buildModelStack(self, X,Y,convModel=[],auto=[],mem=[],dense=[],order=[]):
+        #X = np.array(X)
+        #Y = np.array(Y)
+        Xtensor = Input(shape=X.shape[1:])
+        print("Xtensor")
+        print(X.shape)
+        convLayers = []
+        convLayers.append(Conv1D(filters=10, kernel_size=25, padding='same', activation='relu')(Xtensor)) #shape batch, steps, channels
+        convLayers.append(Conv1D(filters=10, kernel_size=20, padding='same', activation='relu')(Xtensor))
+        convLayers.append(Conv1D(filters=10, kernel_size=15, padding='same', activation='relu')(Xtensor))
+        convLayers.append(Conv1D(filters=10, kernel_size=10, padding='same', activation='relu')(Xtensor))
+        convLayers.append(Conv1D(filters=10, kernel_size=5, padding='same', activation='relu')(Xtensor))
+
+        print("ConvLayers")
         
+        flattenLayers = []
+        flattenModels = []
+        for convLayer in convLayers:
+            flattenLayers.append(Flatten()(convLayer))
+            flattenModels.append(Model(Xtensor,flattenLayers[-1]))
+        print("flattenLayers")
+            
+        denseLayers = []
+        for flattenLayer in flattenLayers:
+            denseLayers.append(Dense(2, activation='softmax')(flattenLayer))
+        print("denseLayers")
+
+        convTrainModels = []
+        for denseLayer in denseLayers:
+            convTrainModels.append(Model(Xtensor,denseLayer))
+            convTrainModels[-1].compile(optimizer="adam",loss="categorical_crossentropy")
+            convTrainModels[-1].fit(X,Y)
+
+        print("convTrainModels")
+        encodeLayers = []
+        for flattenLayer in flattenLayers:
+            encodeLayers.append(Dense(3000)(flattenLayer))
+            print(flattenLayer.shape)
+        print("ensoderLayers")
+        decodeLayers = []
+        for encodeLayer in encodeLayers:
+            decodeLayers.append(Dense(30000)(encodeLayer))
+        print("decodeLayers")
+        decoderModels = []
+        for decodeLayer,flattenModel in zip(decodeLayers, flattenModels):
+            decoderModels.append(Model(Xtensor,decodeLayer))
+            decoderModels[-1].compile(optimizer="adam",loss="mse")
+            decoderModels[-1].fit(X, flattenModel.predict(X))
+        print("decodeModels")
+       
+        classModel = Concatenate()(encodeLayers)
+        classModel = Dense(2, activation="softmax")(classModel)
+        classModel = Model(Xtensor, classModel)
+        classModel.compile(optimizer="adam",loss="categorical_crossentropy")
+        classModel.fit(X,Y)
+        print("ClassModel")
+
+        testSize = 1000
+        Ypred = np.zeros((testSize,Y.shape[1]))
+        print("zeros")
+        Yi = 0
+        for pred in np.argmax(classModel.predict(X[testSize], batch_size=None), axis=1):
+            Ypred[Yi][pred] = 1
+            Yi += 1
+        print("prediction")
+        tp=tn=fn=fp=0
+        Yi= 0
+        for y in Y[testSize]:
+            tp += Ypred[Yi][0]*y[0]
+            fp += max(Ypred[Yi][0]-y[0],0)
+            tn += Ypred[Yi][1]*y[1]
+            fn += max(Ypred[Yi][1]-y[1],0)
+            Yi+=1
+        print("tp,tn,fp,fn")
+        acc=sens=spec=prec=rec=f1=0
+        acc=(tp+tn)/(tp+tn+fp+fn)
+        if (tp+fn > 0):
+            sens=tp/(tp+fn)
+        if (tn+fp > 0):
+            spec=tn/(tn+fp)
+        if (tp+fp > 0):
+            prec=tp/(tp+fp)
+        if (tp+fn > 0):
+            rec=tp/(tp+fn)
+        if (prec+rec > 0):
+            f1=2*((prec*rec)/(prec+rec))
+        modelNum = 1
+        print(f"{modelNum}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}\n")
+
+            
