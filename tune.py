@@ -15,48 +15,121 @@ def main():
     myAnn = keras_ann()
     myData = ann_data(dataPath="/nfshome/gst2d/eegData/")
     
+    
     modelArgs = [] #getModels() small models only for now!
-    addToModels(modelArgs)
+    #addToModels(modelArgs)
+    addToModelsTest_FrequencyFilters(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
 
     testing = True
     if (testing):
         #use default data: input002, input142
-        data,labels,recordCount = myData.readData()
-        data = data[:100]
-        print(data.shape)
-        labels = labels[:100]
+        #data,labels,recordCount = 
+        myData.readData()
+        myData.expandDims()
+        #data = data[:1000]
+        print(myData.data.shape)
+        #labels = labels[:1000]
         dataFiles = ",".join(inputData())
         cvFolds = 10
         valPerc = 0.10
         epochs = 10
-        batchSize =int(((recordCount*(1-valPerc))/cvFolds)+1)
+        batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
         with open("fileTrainTestParams.txt",'w') as params:
             params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
             params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
             params.write(f"batchSize: {batchSize}\n")
-        myAnn.buildModelStack(data,labels)
-        return
-        myAnn.parameterSearch(modelArgs[:10],data,labels,valSplit=0.10)
+        #myAnn.buildModelStack(myData.data,myData.labels)
+        #return
+        myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        data,labels,recordCount = myData.readData(fnames=inputData())
+        myData.readData(fnames=inputData())
+        myData.expandDims()
         dataFiles = ",".join(inputData())
         cvFolds = 10
         valPerc = 0.10
         epochs = 10
-        batchSize =int(((recordCount*(1-valPerc))/cvFolds)+1)
+        batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
         with open("fileTrainTestParams.txt",'w') as params:
             params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
             params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
             params.write(f"batchSize: {batchSize}\n")
-        myAnn.parameterSearch(modelArgs,data,labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
+        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
 
 def inputData():
     #this is the entire list
     #return np.array("input001.csv,input002.csv,input011.csv,input012.csv,input031.csv,input032.csv,input041.csv,input042.csv,input081.csv,input082.csv,input091.csv,input101.csv,input112.csv,input142.csv,input151.csv,input152.csv,input161.csv,input162.csv,input171.csv,input172.csv".split-(","))
     #These choices were made by which ones had the most REM
-    return np.array("input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")[:numOfInputFiles])
+    t = "input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")
+    return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
+def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
+    #low freq to high freq
+    tempArgs = []
+    convFilters = {
+        66:[33],
+        20:[33,13],
+        10:[13,8],
+        5 :[8,4],
+        3 :[4]
+    }
+    kernalSizes = [3,5,10,20,66]
+    numFilters = range(1,6)
+    layerStartingSizeDividers = range(1,11)
+    layerSizeDecreases = range(1,6)
+    hiddenLayers = range(0,11)
+    for kernalSize, numFilter, layerStartingSizeDivider, layerSizeDecrease, hiddenLayer in [(kernalSize, numFilter, layerStartingSizeDivider, layerSizeDecrease, hiddenLayer) for kernalSize in kernalSizes for numFilter in numFilters for layerStartingSizeDivider in layerStartingSizeDividers for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers]:
+        skip = layerSizeDecrease > max(2,hiddenLayer)
+        skip = skip or layerStartingSizeDivider > max(2,numFilter)
+        if (skip):
+            continue
+        tempArgs.append([])
+        if (addConvFilters):
+            for convFilter in convFilters[kernalSize]:
+                tempArgs[-1].append({
+                    'layer': 'conv1d',
+                    'no_filters' : 1,
+                    'kernal_size': convFilter,
+                    'padding'    : 'same',
+                    'activation' : 'relu'
+                })
+        tempArgs[-1].append({
+            'layer': 'conv1d',
+            'no_filters' : numFilter,
+            'kernal_size': kernalSize,
+            'padding'    : 'same',
+            'activation' : 'relu'
+        })
+        
+        layerSize = int((numFilter*3000)/layerStartingSizeDivider)
+        for hid in range(hiddenLayer):
+            
+            tempArgs[-1].append({
+                'layer': 'dense',
+                'output': layerSize,
+                'activation':'relu'
+            })
+            layerSize = int(layerSize/layerSizeDecrease)
+            if (layerSize < 5):
+                break
+        tempArgs[-1].append({
+            'layer': 'flatten'
+        })
+        tempArgs[-1].append({
+            'layer': 'dense',
+            'output': 2,
+            'activation':'softmax'
+        })
+        tempArgs[-1].append({
+            'layer': 'compile',
+            'optimizer': 'adam',
+            'loss': 'categorical_crossentropy',
+            'metrics':['acc']
+        })
+
+    for i in np.random.randint(0,len(tempArgs),size=1000):
+        modelArgs.append(tempArgs[i])
+    
 
 def addToModels(modelArgs):
     #low freq to high freq
