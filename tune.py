@@ -64,8 +64,8 @@ def inputData():
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
 def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
+    useStartingDividers = True
     #low freq to high freq
-    tempArgs = []
     convFilters = {
         66:[33],
         20:[33,13],
@@ -75,36 +75,52 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
     }
     kernalSizes = [3,5,10,20,66]
     numFilters = range(1,6)
-    layerStartingSizeDividers = range(1,11)
+    if (useStartingDividers):
+        layerSizeStarters = range(1,11)
+    else:   
+        layerSizeStarters = [10,50,100,200,400,800]
     layerSizeDecreases = range(1,6)
-    hiddenLayers = range(0,11)
-    for kernalSize, numFilter, layerStartingSizeDivider, layerSizeDecrease, hiddenLayer in [(kernalSize, numFilter, layerStartingSizeDivider, layerSizeDecrease, hiddenLayer) for kernalSize in kernalSizes for numFilter in numFilters for layerStartingSizeDivider in layerStartingSizeDividers for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers]:
-        skip = layerSizeDecrease > max(2,hiddenLayer)
-        skip = skip or layerStartingSizeDivider > max(2,numFilter)
-        if (skip):
+    hiddenLayers = range(1,11)
+    totalSize = len(kernalSizes) * len(numFilters) * len(layerSizeStarters)
+    totalSize *= len(layerSizeDecreases) * len(hiddenLayers)
+    print(f"totalSize: {totalSize}")
+    keepIndexes = np.random.randint(0,totalSize,size=1000)
+    index = 0
+    for kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer in [(kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer) for kernalSize in kernalSizes for numFilter in numFilters for layerSizeStarter in layerSizeStarters for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers]:
+        #skip = layerSizeDecrease > max(2,hiddenLayer)
+        
+        #if (skip):
+        #    continue
+        if (index not in keepIndexes):
+            index += 1
             continue
-        tempArgs.append([])
+        modelArgs.append([])
         if (addConvFilters):
             for convFilter in convFilters[kernalSize]:
-                tempArgs[-1].append({
+                modelArgs[-1].append({
                     'layer': 'conv1d',
                     'no_filters' : 1,
                     'kernal_size': convFilter,
                     'padding'    : 'same',
                     'activation' : 'relu'
                 })
-        tempArgs[-1].append({
+        modelArgs[-1].append({
             'layer': 'conv1d',
             'no_filters' : numFilter,
             'kernal_size': kernalSize,
             'padding'    : 'same',
             'activation' : 'relu'
         })
-        
-        layerSize = int((numFilter*3000)/layerStartingSizeDivider)
+        modelArgs[-1].append({
+            'layer': 'flatten'
+        })
+        if (useStartingDividers):
+            layerSize = int((numFilter*3000)/layerSizeStarter)
+        else:
+            layerSize = layerSizeStarter
         for hid in range(hiddenLayer):
             
-            tempArgs[-1].append({
+            modelArgs[-1].append({
                 'layer': 'dense',
                 'output': layerSize,
                 'activation':'relu'
@@ -112,24 +128,20 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
             layerSize = int(layerSize/layerSizeDecrease)
             if (layerSize < 5):
                 break
-        tempArgs[-1].append({
-            'layer': 'flatten'
-        })
-        tempArgs[-1].append({
+        
+        modelArgs[-1].append({
             'layer': 'dense',
             'output': 2,
             'activation':'softmax'
         })
-        tempArgs[-1].append({
+        modelArgs[-1].append({
             'layer': 'compile',
             'optimizer': 'adam',
             'loss': 'categorical_crossentropy',
             'metrics':['acc']
         })
-
-    for i in np.random.randint(0,len(tempArgs),size=1000):
-        modelArgs.append(tempArgs[i])
-    
+        index += 1
+        
 
 def addToModels(modelArgs):
     #low freq to high freq
