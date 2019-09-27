@@ -185,7 +185,8 @@ class keras_ann(object):
             print("\n\n=================\nTesting Model " + str(modelNum) + "\n=================\n")
             print(paramSet, flush=True)
             try:
-                model = self.convModel(paramSet)            
+                model = self.convModel(paramSet)
+                model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     
@@ -241,13 +242,14 @@ class keras_ann(object):
 
                     
                     #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
-                
+                    model.load_weights('temp_weights.h5')
                     j+=1
-            
+                
             except Exception as e:
                 resultFile.write("error\n")
                 print(str(e))
                 
+            K.clear_session()
             modelNum+=1
             
             if self.killer.kill_now:
