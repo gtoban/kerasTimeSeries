@@ -18,7 +18,7 @@ def main():
     
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
-    addToModelsTest_FrequencyFilters(modelArgs)
+    addToModelsTest_FrequencyFilters(modelArgs, manyFilters=True, numKeepIndexes=100)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
 
     testing = True
@@ -63,7 +63,7 @@ def inputData():
     t = "input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
-def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
+def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000):
     useStartingDividers = True
     #low freq to high freq
     convFilters = {
@@ -74,23 +74,31 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
         3 :[4]
     }
     kernalSizes = [3,5,10,20,66]
-    numFilters = range(1,6)
+    if (manyFilters):
+        numFilters = [1,2,3,4,5,6,20,50,100,200,500]
+    else:    
+        numFilters = range(1,6)
     if (useStartingDividers):
         layerSizeStarters = range(1,11)
     else:   
         layerSizeStarters = [10,50,100,200,400,800]
     layerSizeDecreases = range(1,6)
     hiddenLayers = range(1,11)
+    poolTypes = ['maxpool1d','avgpool1d',None]
+    poolSizes = [2,4,8,12,24]    
+    strideDownscaleFactors = [1,2,3,4,None]
+    
     totalSize = len(kernalSizes) * len(numFilters) * len(layerSizeStarters)
     totalSize *= len(layerSizeDecreases) * len(hiddenLayers)
+    totalSize *= len(poolTypes) * len(poolSizes) * len(strideDownscaleFactors)
     print(f"totalSize: {totalSize}")
-    keepIndexes = np.random.randint(0,totalSize,size=1000)
+    keepIndexes = np.random.randint(0,totalSize,size=numKeepIndexes)
     index = 0
-    for kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer in [(kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer) for kernalSize in kernalSizes for numFilter in numFilters for layerSizeStarter in layerSizeStarters for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers]:
+    for kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer, poolType, poolSize, strideDownscaleFactor in [(kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer, poolType, poolSize, strideDownscaleFactor) for kernalSize in kernalSizes for numFilter in numFilters for layerSizeStarter in layerSizeStarters for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers for poolType in poolTypes for poolSize in poolSizes for strideDownscaleFactor in strideDownscaleFactors]:
         #skip = layerSizeDecrease > max(2,hiddenLayer)
-        
-        #if (skip):
-        #    continue
+        skip = poolSize > kernalSize
+        if (skip):
+            continue
         if (index not in keepIndexes):
             index += 1
             continue
@@ -111,6 +119,14 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True):
             'padding'    : 'same',
             'activation' : 'relu'
         })
+
+        if (poolType is not None):
+            modelArgs[-1].append({
+                'layer': poolType,
+                'pool_size': poolSize,
+                'strides':strideDownscaleFactor,
+                'padding':'valid'
+            })
         modelArgs[-1].append({
             'layer': 'flatten'
         })

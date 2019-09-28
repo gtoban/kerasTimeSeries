@@ -2,7 +2,7 @@ import numpy as np
 import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
-from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, Input, Concatenate, Embedding,LSTM
+from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
 from tensorflow.keras import backend as K
 from tensorflow.keras import metrics
 from sklearn.model_selection import StratifiedKFold
