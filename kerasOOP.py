@@ -165,6 +165,15 @@ class keras_ann(object):
         #            #metrics=['acc']) #metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
         return model
 
+    #source: https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer
+    def reset_weights(self, model):
+        session = K.get_session()
+        for layer in model.layers: 
+            if hasattr(layer, 'kernel_initializer'):
+                layer.kernel.initializer.run(session=session)
+            if hasattr(layer, 'bias_initializer'):
+                layer.bias.initializer.run(session=session)
+    
     def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None):
         # create CV dat LOOV 
         #numSplits = 2
@@ -186,7 +195,7 @@ class keras_ann(object):
             print(paramSet, flush=True)
             try:
                 model = self.convModel(paramSet)
-                model.save_weights('temp_weights.h5')
+                #model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     
@@ -242,7 +251,8 @@ class keras_ann(object):
 
                     
                     #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
-                    model.load_weights('temp_weights.h5')
+                    #model.load_weights('temp_weights.h5')
+                    self.reset_weights(model)
                     j+=1
                 
             except Exception as e:
