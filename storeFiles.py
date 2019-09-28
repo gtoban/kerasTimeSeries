@@ -1,6 +1,7 @@
 import subprocess
 import datetime
 import sys
+import os
 
 def main():
     if (len(sys.argv) < 2):
@@ -13,10 +14,16 @@ def main():
     model = idDate + "fileModel.csv"
     result = idDate + "fileResult.csv"
     params = idDate + "fileTrainTestParams.txt"
-
-    p = subprocess.Popen(["cp", "fileModel.csv", model])
-    p = subprocess.Popen(["cp", "fileResult.csv", result])
-    p = subprocess.Popen(["cp", "fileTrainTestParams.txt", params])
+    status = idDate + "status.txt"
+    
+    if (os.stat("fileModel.csv").st_size > 0):
+        p = subprocess.Popen(["cp", "fileModel.csv", model])
+    if (os.stat("fileResult.csv").st_size > 0):
+        p = subprocess.Popen(["cp", "fileResult.csv", result])
+    if (os.stat("fileTrainTestParams.txt").st_size > 0):
+        p = subprocess.Popen(["cp", "fileTrainTestParams.txt", params])
+    if (os.stat("status.txt").st_size > 0):
+        p = subprocess.Popen(["cp", "status.txt", status])
     
 
 main()
