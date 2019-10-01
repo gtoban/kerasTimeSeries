@@ -66,7 +66,7 @@ def inputData():
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
 def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000):
-    useStartingDividers = True
+    useStartingDividers = False
     #low freq to high freq
     convFilters = {
         66:[33],
@@ -77,7 +77,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     }
     kernalSizes = [3,5,10,20,66]
     if (manyFilters):
-        numFilters = [1,2,3,4,5,6,20,50,100,200,500]
+        numFilters = [20,50,100,200,500]
     else:    
         numFilters = range(1,6)
     if (useStartingDividers):
@@ -89,6 +89,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     poolTypes = ['maxpool1d','avgpool1d',None]
     poolSizes = [2,4,8,12,24]    
     strideDownscaleFactors = [1,2,3,4,None]
+    activationFunctions = ['relu','tanh','sigmoid']
     
     totalSize = len(kernalSizes) * len(numFilters) * len(layerSizeStarters)
     totalSize *= len(layerSizeDecreases) * len(hiddenLayers)
@@ -105,6 +106,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
         if (index not in keepIndexes):
             index += 1
             continue
+        activation = activationFunctions[int(np.random.randint(0,3))]
         modelArgs.append([])
         if (addConvFilters):
             for convFilter in convFilters[kernalSize]:
