@@ -99,6 +99,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     for kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer, poolType, poolSize, strideDownscaleFactor in [(kernalSize, numFilter, layerSizeStarter, layerSizeDecrease, hiddenLayer, poolType, poolSize, strideDownscaleFactor) for kernalSize in kernalSizes for numFilter in numFilters for layerSizeStarter in layerSizeStarters for layerSizeDecrease in layerSizeDecreases for hiddenLayer in hiddenLayers for poolType in poolTypes for poolSize in poolSizes for strideDownscaleFactor in strideDownscaleFactors]:
         #skip = layerSizeDecrease > max(2,hiddenLayer)
         skip = poolSize > kernalSize
+        skip = skip and (numFilter > 20 and poolType is None)
         if (skip):
             continue
         if (index not in keepIndexes):
