@@ -115,14 +115,14 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
                     'no_filters' : 1,
                     'kernal_size': convFilter,
                     'padding'    : 'same',
-                    'activation' : 'relu'
+                    'activation' : activation
                 })
         modelArgs[-1].append({
             'layer': 'conv1d',
             'no_filters' : numFilter,
             'kernal_size': kernalSize,
             'padding'    : 'same',
-            'activation' : 'relu'
+            'activation' : activation
         })
 
         if (poolType is not None):
@@ -144,7 +144,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
             modelArgs[-1].append({
                 'layer': 'dense',
                 'output': layerSize,
-                'activation':'relu'
+                'activation':activation
             })
             layerSize = int(layerSize/layerSizeDecrease)
             if (layerSize < 5):

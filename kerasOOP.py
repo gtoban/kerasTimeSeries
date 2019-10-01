@@ -191,7 +191,7 @@ class keras_ann(object):
         #X = [0,1,2,3,4,5,6,7,8,9]
         modelFile = open(self.outputPath + "fileModel.csv", 'w')
         resultFile = open(self.outputPath + "fileResult.csv",'w')
-        resultFile.write("modelNum|True REM|False REM|False NonREM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score\n")
+        resultFile.write("modelNum|True REM|False REM|False NonREM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score|finalLoss\n")
         modelNum = 0
         for paramSet in paramSets:
             
@@ -206,7 +206,7 @@ class keras_ann(object):
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     
-                    model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs)
+                    fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):
@@ -252,9 +252,9 @@ class keras_ann(object):
                         rec=tp/(tp+fn)
                     if (prec+rec > 0):
                         f1=2*((prec*rec)/(prec+rec))
-                    resultFile.write(f"{modelNum}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}\n")
-                    print(f"{'Validate':10s}|{'modelNum':10s}|{'tp':10s}|{'fp':10s}|{'fn':10s}|{'tn':10s}|{'acc':10s}|{'sens':10s}|{'spec':10s}|{'rec':10s}|{'prec':10s}|{'f1':10s}\n")
-                    print(f"{j:10d}|{modelNum:10d}|{tp:10.3f}|{fp:10.3f}|{fn:10.3f}|{tn:10.3f}|{acc:10.3f}|{sens:10.3f}|{spec:10.3f}|{rec:10.3f}|{prec:10.3f}|{f1:10.3f}\n", flush=True)
+                    resultFile.write(f"{modelNum}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}|{fitHistory.history['loss'][-1]:10.3f}\n")
+                    print(f"{'Validate':10s}|{'modelNum':10s}|{'tp':10s}|{'fp':10s}|{'fn':10s}|{'tn':10s}|{'acc':10s}|{'sens':10s}|{'spec':10s}|{'rec':10s}|{'prec':10s}|{'f1':10s}|{'loss':10s}\n")
+                    print(f"{j:10d}|{modelNum:10d}|{tp:10.3f}|{fp:10.3f}|{fn:10.3f}|{tn:10.3f}|{acc:10.3f}|{sens:10.3f}|{spec:10.3f}|{rec:10.3f}|{prec:10.3f}|{f1:10.3f}|{fitHistory.history['loss'][-1]:10.3f}\n", flush=True)
 
                     
                     #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
