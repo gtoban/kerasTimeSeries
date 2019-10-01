@@ -24,7 +24,9 @@ class ann_data(object):
     def __init__(self,dataPath="",outputPath=""):
         self.dataPath = dataPath
         self.outputPath = outputPath
-
+        self.normSTD = 1
+        self.normMean = 1
+        
     def readData(self, fnames=["input002.csv","input142.csv"]):
         self.record_count = 0
         for fname in fnames:
@@ -61,6 +63,11 @@ class ann_data(object):
         self.data = np.expand_dims(self.data,axis=2)
         
         print("shape:", self.data.shape)
+
+    def normalize(self):
+        self.normSTD = np.std(self.data)
+        self.normMean = np.mean(self.data)
+        self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
     
 class keras_ann(object):
     def __init__(self):

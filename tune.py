@@ -13,7 +13,7 @@ smallModelOnly = True
 numOfInputFiles = 8
 def main():
     myAnn = keras_ann()
-    myData = ann_data(dataPath="/nfshome/gst2d/eegData/")
+    myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
     
     
     modelArgs = [] #getModels() small models only for now!
@@ -27,6 +27,7 @@ def main():
         #data,labels,recordCount = 
         myData.readData()
         myData.expandDims()
+        myData.normalize()
         #data = data[:1000]
         print(myData.data.shape)
         #labels = labels[:1000]
@@ -45,6 +46,7 @@ def main():
     else:
         myData.readData(fnames=inputData())
         myData.expandDims()
+        myData.normalize()
         dataFiles = ",".join(inputData())
         cvFolds = 10
         valPerc = 0.10
