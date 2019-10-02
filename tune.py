@@ -18,7 +18,7 @@ def main():
     
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
-    addToModelsTest_FrequencyFilters(modelArgs, manyFilters=True, numKeepIndexes=100)
+    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=True, numKeepIndexes=100, kernalPreset=5)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
 
     testing = True
@@ -26,8 +26,10 @@ def main():
         #use default data: input002, input142
         #data,labels,recordCount = 
         myData.readData()
+        myData.filterFrequencyRange(low=3.5, high=7.5)
         myData.expandDims()
         myData.normalize()
+        
         #data = data[:1000]
         print(myData.data.shape)
         #labels = labels[:1000]
@@ -45,6 +47,7 @@ def main():
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
         myData.readData(fnames=inputData())
+        myData.filterFrequencyRange(low=3.5, high=7.5)
         myData.expandDims()
         myData.normalize()
         dataFiles = ",".join(inputData())
@@ -65,7 +68,7 @@ def inputData():
     t = "input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
-def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000):
+def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000, kernalPreset=-1):
     useStartingDividers = False
     #low freq to high freq
     convFilters = {
@@ -75,7 +78,10 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
         5 :[8,4],
         3 :[4]
     }
-    kernalSizes = [3,5,10,20,66]
+    if kernalPreset < 1:
+        kernalSizes = [3,5,10,20,66]
+    else:
+        kernalSizes = [kernalPreset]
     if (manyFilters):
         numFilters = [20,50,100,200,500]
     else:    

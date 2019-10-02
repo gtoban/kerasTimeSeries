@@ -7,6 +7,7 @@ from tensorflow.keras import backend as K
 from tensorflow.keras import metrics
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
+from scipy import signal as scisig
 import signal
 import sys
 
@@ -68,6 +69,21 @@ class ann_data(object):
         self.normSTD = np.std(self.data)
         self.normMean = np.mean(self.data)
         self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
+    def filterFrequencyRange(self, low=None, high=None):
+        tansitionRate = 0.1
+        sampleFrequency = 100
+        filterOrder = 8*np.round(sampleFrequency/low)+1
+        filterShape = [0,0,1,1,0,0]
+        filterFrequencies =     [0,
+                                 low*(1-tansitionRate),
+                                 low,
+                                 high,
+                                 high+high*tansitionRate,
+                                 sampleFrequency/2]
+        filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape)
+        for i in range(self.data.shape[0]):
+            self.data[i] = scisig.filtfilt(filterKernel,1,self.data[i])
+        
     
 class keras_ann(object):
     def __init__(self):
