@@ -69,6 +69,7 @@ class ann_data(object):
         self.normSTD = np.std(self.data)
         self.normMean = np.mean(self.data)
         self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
+        
     def filterFrequencyRange(self, low=None, high=None):
         tansitionRate = 0.1
         sampleFrequency = 100
@@ -81,9 +82,14 @@ class ann_data(object):
                                  high+high*tansitionRate,
                                  sampleFrequency/2]
         filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape)
-        for i in range(self.data.shape[0]):
-            self.data[i] = scisig.filtfilt(filterKernel,1,self.data[i])
-        
+        myError = 0
+        try:
+            for i in range(self.data.shape[0]):
+                #print(i)
+                myError = i
+                self.data[i] = scisig.filtfilt(filterKernel,1,self.data[i])
+        except Exception as e:
+            print(f"BAND RANGE ERROR epoch: {myError}")
     
 class keras_ann(object):
     def __init__(self):

@@ -10,7 +10,7 @@ import os
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
-numOfInputFiles = 8
+numOfInputFiles = 30
 def main():
     myAnn = keras_ann()
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
@@ -21,7 +21,7 @@ def main():
     addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=True, numKeepIndexes=100, kernalPreset=5)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
 
-    testing = True
+    testing = False
     if (testing):
         #use default data: input002, input142
         #data,labels,recordCount = 
