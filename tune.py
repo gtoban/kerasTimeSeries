@@ -12,16 +12,18 @@ import os
 smallModelOnly = True
 numOfInputFiles = 30
 def main():
+    print("Initializing")
     myAnn = keras_ann()
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
     
     
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
+    print("Collecting Models")
     addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=True, numKeepIndexes=100, kernalPreset=5)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
-
-    testing = False
+    
+    testing = True
     if (testing):
         #use default data: input002, input142
         #data,labels,recordCount = 

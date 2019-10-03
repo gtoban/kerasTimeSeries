@@ -29,6 +29,7 @@ class ann_data(object):
         self.normMean = 1
         
     def readData(self, fnames=["input002.csv","input142.csv"]):
+        print("Starting Read")
         self.record_count = 0
         for fname in fnames:
             with open(self.dataPath + fname) as f:
@@ -61,16 +62,19 @@ class ann_data(object):
         #return self.data, self.labels, self.record_count
 
     def expandDims(self):
+        print("Expand Dims")
         self.data = np.expand_dims(self.data,axis=2)
         
         print("shape:", self.data.shape)
 
     def normalize(self):
+        print("Normalize")
         self.normSTD = np.std(self.data)
         self.normMean = np.mean(self.data)
         self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
         
     def filterFrequencyRange(self, low=None, high=None):
+        print("Frequency Range")
         tansitionRate = 0.1
         sampleFrequency = 100
         filterOrder = 8*np.round(sampleFrequency/low)+1
@@ -81,7 +85,7 @@ class ann_data(object):
                                  high,
                                  high+high*tansitionRate,
                                  sampleFrequency/2]
-        filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape)
+        filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape, fs=sampleFrequency)
         myError = 0
         try:
             for i in range(self.data.shape[0]):
