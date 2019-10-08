@@ -26,9 +26,11 @@ def main():
     testing = True
     if (testing):
         #use default data: input002, input142
-        #data,labels,recordCount = 
+        #data,labels,recordCount =
+        lowFreq = 3.5
+        highFreq = 7.5
         myData.readData()
-        myData.filterFrequencyRange(low=3.5, high=7.5)
+        myData.filterFrequencyRange(low=lowFreq, high=highFreq)
         myData.expandDims()
         myData.normalize()
         
@@ -44,12 +46,15 @@ def main():
             params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
             params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
             params.write(f"batchSize: {batchSize}\n")
+            params.write(f"frequency: {lowFreq} - {highFreq}")
         #myAnn.buildModelStack(myData.data,myData.labels)
         #return
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
+        lowFreq = 3.5
+        highFreq = 7.5
         myData.readData(fnames=inputData())
-        myData.filterFrequencyRange(low=3.5, high=7.5)
+        myData.filterFrequencyRange(low=lowFreq, high=highFreq)
         myData.expandDims()
         myData.normalize()
         dataFiles = ",".join(inputData())
@@ -61,6 +66,7 @@ def main():
             params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
             params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
             params.write(f"batchSize: {batchSize}\n")
+            params.write(f"frequency: {lowFreq} - {highFreq}")
         myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
 
 def inputData():
