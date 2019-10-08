@@ -114,7 +114,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
         if (index not in keepIndexes):
             index += 1
             continue
-        activation = activationFunctions[int(np.random.randint(0,3))]
+        activation = activationFunctions[int(np.random.randint(0,len(activationFunctions)))]
         modelArgs.append([])
         if (addConvFilters):
             for convFilter in convFilters[kernalSize]:
