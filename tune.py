@@ -24,49 +24,28 @@ def main():
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     testing = True
+    lowFreq = 3.5
+    highFreq = 7.5
     if (testing):
-        #use default data: input002, input142
-        #data,labels,recordCount =
-        lowFreq = 3.5
-        highFreq = 7.5
         myData.readData()
-        myData.filterFrequencyRange(low=lowFreq, high=highFreq)
-        myData.expandDims()
-        myData.normalize()
-        
-        #data = data[:1000]
-        print(myData.data.shape)
-        #labels = labels[:1000]
-        dataFiles = ",".join(inputData())
-        cvFolds = 10
-        valPerc = 0.10
-        epochs = 10
-        batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
-        with open("fileTrainTestParams.txt",'w') as params:
-            params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
-            params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
-            params.write(f"batchSize: {batchSize}\n")
-            params.write(f"frequency: {lowFreq} - {highFreq}")
-        #myAnn.buildModelStack(myData.data,myData.labels)
-        #return
+    else:
+        myData.readData(fnames=inputData())
+    myData.filterFrequencyRange(low=lowFreq, high=highFreq)
+    myData.expandDims()
+    myData.normalize()
+    dataFiles = ",".join(inputData())
+    cvFolds = 10
+    valPerc = 0.10
+    epochs = 10
+    batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
+    with open("fileTrainTestParams.txt",'w') as params:
+        params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
+        params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
+        params.write(f"batchSize: {batchSize}\n")
+        params.write(f"frequency: {lowFreq} - {highFreq}")
+    if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        lowFreq = 3.5
-        highFreq = 7.5
-        myData.readData(fnames=inputData())
-        myData.filterFrequencyRange(low=lowFreq, high=highFreq)
-        myData.expandDims()
-        myData.normalize()
-        dataFiles = ",".join(inputData())
-        cvFolds = 10
-        valPerc = 0.10
-        epochs = 10
-        batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
-        with open("fileTrainTestParams.txt",'w') as params:
-            params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
-            params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
-            params.write(f"batchSize: {batchSize}\n")
-            params.write(f"frequency: {lowFreq} - {highFreq}")
         myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
 
 def inputData():
