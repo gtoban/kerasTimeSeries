@@ -140,12 +140,21 @@ class keras_ann(object):
         #
         for modelArg in modelArgs[1:]:
             if (modelArg['layer'] == 'conv1d'):
-                model = Conv1D(filters=modelArg['no_filters'], kernel_size=modelArg['kernal_size'], padding=modelArg['padding'], activation=modelArg['activation'])(model)#shape batch, steps, channels
+                model = Conv1D(filters=modelArg['no_filters'],
+                                   kernel_size=modelArg['kernal_size'],
+                                   padding=modelArg['padding'],
+                                   activation=modelArg['activation'],
+                                   )(model)#shape batch, steps, channels
             elif (modelArg['layer'] == 'flatten'):
                 model = Flatten()(model)
 
             elif (modelArg['layer'] == 'dense'):
-                model = Dense(modelArg['output'], activation=modelArg['activation'])(model)
+                model = Dense(modelArg['output'],
+                                  activation=modelArg['activation'],
+                                  kernel_initializer=modelArg['kernel_initializer'],
+                                  bias_initializer=modelArg['bias_initializer'])(model)
+                
+                
             elif (modelArg['layer'] == 'maxpool1d'):
                 model = MaxPooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],

@@ -10,7 +10,7 @@ import os
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
-numOfInputFiles = 30
+numOfInputFiles = 5
 def main():
     print("Initializing")
     myAnn = keras_ann()
@@ -20,7 +20,7 @@ def main():
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=True, numKeepIndexes=100, kernalPreset=5)
+    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=5)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     testing = True
@@ -93,7 +93,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     if (manyFilters):
         numFilters = [20,50,100,200,500]
     else:    
-        numFilters = range(1,6)
+        numFilters = range(5,11,5) #use 5 and 10 only
     if (useStartingDividers):
         layerSizeStarters = range(1,11)
     else:   
@@ -104,7 +104,10 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     poolSizes = [2,4,8,12,24]    
     strideDownscaleFactors = [1,2,3,4,None]
     activationFunctions = ['relu','tanh','sigmoid']
-    
+    kernelInitializers = ['zeros','ones','random_normal','random_uniform', 'glorot_normal','glorot_uniform','he_normal','he_uniform']
+    biasInitializers = ['zeros','ones','random_normal','random_uniform', 'glorot_normal','glorot_uniform','he_normal','he_uniform']
+    optimizers = ['adam','sgd','rmsprop','nadam']
+
     totalSize = len(kernalSizes) * len(numFilters) * len(layerSizeStarters)
     totalSize *= len(layerSizeDecreases) * len(hiddenLayers)
     totalSize *= len(poolTypes) * len(poolSizes) * len(strideDownscaleFactors)
@@ -121,6 +124,9 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
             index += 1
             continue
         activation = activationFunctions[int(np.random.randint(0,len(activationFunctions)))]
+        kernelInitializer = kernelInitializers[int(np.random.randint(0,len(kernelInitializers)))]
+        biasInitializer = biasInitializers[int(np.random.randint(0,len(biasInitializers)))]
+        optimizer = optimizers[int(np.random.randint(0,len(optimizers)))]
         modelArgs.append([])
         if (addConvFilters):
             for convFilter in convFilters[kernalSize]:
@@ -129,14 +135,18 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
                     'no_filters' : 1,
                     'kernal_size': convFilter,
                     'padding'    : 'same',
-                    'activation' : activation
+                    'activation' : activation,
+                    'kernel_initializer': kernelInitializer,
+                    'bias_initializer': biasInitializer
                 })
         modelArgs[-1].append({
             'layer': 'conv1d',
             'no_filters' : numFilter,
             'kernal_size': kernalSize,
             'padding'    : 'same',
-            'activation' : activation
+            'activation' : activation,
+            'kernel_initializer': kernelInitializer,
+            'bias_initializer': biasInitializer
         })
 
         if (poolType is not None):
@@ -158,7 +168,9 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
             modelArgs[-1].append({
                 'layer': 'dense',
                 'output': layerSize,
-                'activation':activation
+                'activation':activation,
+                'kernel_initializer': kernelInitializer,
+                'bias_initializer': biasInitializer
             })
             layerSize = int(layerSize/layerSizeDecrease)
             if (layerSize < 5):
@@ -167,11 +179,13 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
         modelArgs[-1].append({
             'layer': 'dense',
             'output': 2,
-            'activation':'softmax'
+            'activation':'softmax',
+            'kernel_initializer': kernelInitializer,
+            'bias_initializer': biasInitializer
         })
         modelArgs[-1].append({
             'layer': 'compile',
-            'optimizer': 'adam',
+            'optimizer': optimizer,
             'loss': 'categorical_crossentropy',
             'metrics':['acc']
         })
