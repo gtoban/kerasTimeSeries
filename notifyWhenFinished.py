@@ -23,9 +23,10 @@ def main():
 
     notDone = True
     while (notDone):
-        p = subprocess.Popen(["ssh", "compute-0-0","ps","-q",pid], stdout=subprocess.PIPE)
+        #p = subprocess.Popen(["ssh", "compute-0-0","ps","-q",pid], stdout=subprocess.PIPE)
+        p = subprocess.Popen(["ps","-q",pid], stdout=subprocess.PIPE)
         out = p.communicate()[0]
-        if (len(data1.split(b"\n")) < 3):
+        if (len(out.split(b"\n")) < 3):
             notDone = False
         else:
             time.sleep(30)
