@@ -15,17 +15,20 @@ def main():
     print("Initializing")
     myAnn = keras_ann()
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
-    
+
+    lowFreq = 3.5
+    highFreq = 7.5
+    kernels = 5
+    testing = True
     
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=5)
+    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernels)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
-    testing = True
-    lowFreq = 3.5
-    highFreq = 7.5
+    
+    
     if (testing):
         myData.readData()
     else:
@@ -76,9 +79,9 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     if (useStartingDividers):
         layerSizeStarters = range(1,11)
     else:   
-        layerSizeStarters = [10,50,100,200,400,800]
-    layerSizeDecreases = range(1,6)
-    hiddenLayers = range(1,11)
+        layerSizeStarters = [800] #[10,50,100,200,400,800]
+    layerSizeDecreases = [1]#range(1,6)
+    hiddenLayers = [10]#range(1,11)
     poolTypes = ['maxpool1d','avgpool1d',None]
     poolSizes = [2,4,8,12,24]    
     strideDownscaleFactors = [1,2,3,4,None]
