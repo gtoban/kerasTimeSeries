@@ -1,3 +1,4 @@
+import pandas as pd
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -6,7 +7,7 @@ from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import RandomizedSearchCV
 from kerasOOP import keras_ann, ann_data
 import os
-
+import json
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
@@ -18,13 +19,14 @@ def main():
 
     lowFreq = 3.5
     highFreq = 7.5
-    kernels = 5
+    kernelsize = 5
     testing = True
     
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernels)
+    #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
+    getCandidates(modelArgs)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -58,6 +60,12 @@ def inputData():
     t = "input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
+def getCandidates(modelArgs):
+    
+    for index, candidate in pd.read_csv("candidate.csv", sep='|').iterrows():
+        modelArgs.append(json.loads(candidate["model"]))
+
+        
 def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000, kernalPreset=-1):
     useStartingDividers = False
     #low freq to high freq

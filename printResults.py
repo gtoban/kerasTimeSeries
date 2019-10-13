@@ -19,9 +19,14 @@ def main():
     for filename in listdir(myDir):
         if (idNum in filename):
             if ("Result" in filename):
-                results = pd.read_csv(myDir + filename, sep='|', usecols=['modelNum','True REM','False REM'])
+                #False NonREM|True NonREM|Acc|Sens|Spec
+                results = pd.read_csv(myDir + filename, sep='|')#, usecols=['modelNum','True REM','False REM'])
                 #print(results['True REM'] > 0
-                results = results[(results['True REM']>0) | (results['False REM'] >0)]
+                results['f1Avg'] = results[['modelNum','f1score']].groupby('modelNum').transform(np.average)
+                results['zeroSens']= results[['modelNum','Sens']].groupby('modelNum').transform(np.prod)
+                results['zeroSpec']= results[['modelNum','Spec']].groupby('modelNum').transform(np.prod)
+                results = results[results['modelNum'].isin(results[(results['zeroSens']>0) & (results['zeroSpec'] >0)]['modelNum'])]
+                #results = results[(results["False REM"] > 0) | (results["True REM"] > 0)]
             if ("Model" in filename):
                 models = pd.read_csv(myDir + filename, sep="|", header=None,names=['modelNum','model'])
             #print(filename)
@@ -30,14 +35,16 @@ def main():
     data = pd.merge(results,models,on='modelNum', how='inner')
     data[['tp_sum','tn_sum']] = data[['modelNum','True REM','False REM']].groupby('modelNum').transform(np.sum)
     data['t_ratio'] = np.divide(data['tp_sum'],data['tn_sum']+np.finfo(float).eps)
-    data=data.sort_values(by=['t_ratio','modelNum'], ascending=False)
+    data=data.sort_values(by=['f1Avg','modelNum'], ascending=False)
     
-    print(f"modelNum|tp|fp |tratio|kernelInit|biasInit|optimizer|kernelSize|numKernels|activation|pool|numDense|sizes")
+    print(f"modelNum|tp|fp |tratio|Spec NR|Sens R|kernelInit|biasInit|optimizer|kernelSize|numKernels|activation|pool|numDense|sizes")
     for index, row in data.iterrows():
         modelInfo = json.loads(row['model'])
         modelNum = row['modelNum']
         tp = int(row['True REM'])
         fp = int(row['False REM'])
+        spec = float(row['Spec'])
+        sens = float(row['Sens'])
         tratio = row['t_ratio']
         kernelSize = 0
         numKernels = 0
@@ -68,7 +75,7 @@ def main():
                     optimizer = layer['optimizer']
                 except:
                     pass
-        print(f"{modelNum:3d}|{tp:3d}|{fp:3d}|{tratio:.3f}|{kernelInit}|{biasInit}|{optimizer}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+        print(f"{modelNum:3d}|{tp:3d}|{fp:3d}|{tratio:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
         
 
 
