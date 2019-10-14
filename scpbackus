@@ -1,0 +1,3 @@
+#!/bin/bash
+testId=$(printf "%05d" $1)
+scp backus.mtsu.edu:~/kerasTimeSeries/$testId* ./modelResults/
