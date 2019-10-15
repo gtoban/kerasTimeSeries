@@ -89,7 +89,7 @@ def addAdam(modelArgs, tmodel, numKeepIndexes):
     beta1s = [0.98,0.99,0.999,0.9999]
     beta2s = [0.98,0.99,0.999,0.9999]
     amsgrads = [True,False]
-    total = len(learningRates) + len(beta1s) + len(beta2s) + len(amsgrads)
+    total = len(learningRates) * len(beta1s) * len(beta2s) * len(amsgrads)
     ci = 0
     for i in range(len(target)):
         if (target[i]['layer'] == 'compile'):
@@ -114,7 +114,7 @@ def addNAdam(modelArgs, tmodel, numKeepIndexes):
     beta1s = [0.98,0.99,0.999,0.9999]
     beta2s = [0.98,0.99,0.999,0.9999]
     
-    total = len(learningRates) + len(beta1s) + len(beta2s) + len(amsgrads)
+    total = len(learningRates) * len(beta1s) * len(beta2s) * len(amsgrads)
     ci = 0
     for i in range(len(target)):
         if (target[i]['layer'] == 'compile'):
@@ -138,7 +138,7 @@ def addSGD(modelArgs,tmodel, numKeepIndexes):
     learningRates = [0.1,0.01,0.001,0.0001]
     momentums = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
     nesterovs = [True,False]
-    total = len(learningRates) + len(momentums) + len(nesterovs)
+    total = len(learningRates) * len(momentums) * len(nesterovs)
     ci = 0
     for i in range(len(target)):
         if (target[i]['layer'] == 'compile'):
@@ -162,7 +162,7 @@ def addRMSprop(modelArgs,tmodel, numKeepIndexes):
     learningRates = [0.1,0.01,0.001,0.0001]
     rhos = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
     
-    total = len(learningRates) + len(rhos)
+    total = len(learningRates) * len(rhos)
     ci = 0
     for i in range(len(target)):
         if (target[i]['layer'] == 'compile'):
