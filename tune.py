@@ -11,7 +11,7 @@ import json
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
-numOfInputFiles = 5
+numOfInputFiles = 12
 def main():
     print("Initializing")
     myAnn = keras_ann()
@@ -26,7 +26,7 @@ def main():
     #addToModels(modelArgs)
     print("Collecting Models")
     #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    getCandidates(modelArgs)
+    getCandidates(modelArgs, fname="topTen.csv", optimize = True)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -41,7 +41,7 @@ def main():
     dataFiles = ",".join(inputData())
     cvFolds = 10
     valPerc = 0.10
-    epochs = 10
+    epochs = 500
     batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
     with open("fileTrainTestParams.txt",'w') as params:
         params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
@@ -60,11 +60,126 @@ def inputData():
     t = "input152.csv,input042.csv,input171.csv,input161.csv,input082.csv,input091.csv,input002.csv,input142.csv,input031.csv,input151.csv,input101.csv,input032.csv".split(",")
     return np.array(t[:max( min(numOfInputFiles,len(t)),2)]) 
 
-def getCandidates(modelArgs):
+def getCandidates(modelArgs, fname="candidate.csv", optimize = False):
     
-    for index, candidate in pd.read_csv("candidate.csv", sep='|').iterrows():
+    for index, candidate in pd.read_csv(fname, sep='|').iterrows():
         modelArgs.append(json.loads(candidate["model"]))
 
+    if (optimize):
+        numOfCandidates = len(modelArgs)
+        for cid in range(numOfCandidates):
+            c = modelArgs[cid]
+            for layer in c:
+                if (layer["layer"] == 'compile'):
+                    #['adam','sgd','rmsprop','nadam']
+                    if (layer['optimizer'] == 'sgd'):
+                        addSGD(modelArgs, c, int(100/numOfCandidates))
+                    
+                    if (layer['optimizer'] == 'adam'):
+                        addAdam(modelArgs, c, int(100/numOfCandidates))
+
+                    if (layer['optimizer'] == 'nadam'):
+                        addNAdam(modelArgs, c, int(100/numOfCandidates))
+
+                    if (layer['optimizer'] == 'rmsprop'):
+                        addRMSprop(modelArgs, c, int(100/numOfCandidates))
+def addAdam(modelArgs, tmodel, numKeepIndexes):
+    target = tmodel
+    learningRates = [0.1,0.01,0.001,0.0001]
+    beta1s = [0.98,0.99,0.999,0.9999]
+    beta2s = [0.98,0.99,0.999,0.9999]
+    amsgrads = [True,False]
+    total = len(learningRates) + len(beta1s) + len(beta2s) + len(amsgrads)
+    ci = 0
+    for i in range(len(target)):
+        if (target[i]['layer'] == 'compile'):
+            ci = i
+    first = True
+    keepIndexes = np.concatenate((np.array([0]),np.random.randint(1,total,size=numKeepIndexes-1)))
+    index = 0
+    for lr, beta1, beta2, amsgrad in [(lr, beta1, beta2, amsgrad) for lr in learningRates for beta1 in beta1s for beta2 in beta2s for amsgrad in amsgrads]:
+        if (index not in keepIndexes):
+            index += 1
+            continue
+        target[ci]['optimizerOptions'] = [lr, beta1, beta2, amsgrad]
+        if (not first):
+            modelArgs.append(target)
+        first = False
+        target = tmodel.copy()
+        index += 1
+
+def addNAdam(modelArgs, tmodel, numKeepIndexes):
+    target = tmodel
+    learningRates = [0.1,0.01,0.001,0.0001]
+    beta1s = [0.98,0.99,0.999,0.9999]
+    beta2s = [0.98,0.99,0.999,0.9999]
+    
+    total = len(learningRates) + len(beta1s) + len(beta2s) + len(amsgrads)
+    ci = 0
+    for i in range(len(target)):
+        if (target[i]['layer'] == 'compile'):
+            ci = i
+    first = True
+    keepIndexes = np.concatenate((np.array([0]),np.random.randint(1,total,size=numKeepIndexes-1)))
+    index = 0
+    for lr, beta1, beta2  in [(lr, beta1, beta2) for lr in learningRates for beta1 in beta1s for beta2 in beta2s]:
+        if (index not in keepIndexes):
+            index += 1
+            continue
+        target[ci]['optimizerOptions'] = [lr, beta1, beta2]
+        if (not first):
+            modelArgs.append(target)
+        first = False
+        target = tmodel.copy()
+        index += 1
+
+def addSGD(modelArgs,tmodel, numKeepIndexes):
+    target = tmodel
+    learningRates = [0.1,0.01,0.001,0.0001]
+    momentums = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
+    nesterovs = [True,False]
+    total = len(learningRates) + len(momentums) + len(nesterovs)
+    ci = 0
+    for i in range(len(target)):
+        if (target[i]['layer'] == 'compile'):
+            ci = i
+    first = True
+    keepIndexes = np.concatenate((np.array([0]),np.random.randint(1,total,size=numKeepIndexes-1)))
+    index=0
+    for lr, mo, nesterov in [(lr, mo, nesterov) for lr in learningRates for mo in momentums for nesterov in nesterovs]:
+        if (index not in keepIndexes):
+            index += 1
+            continue
+        target[ci]['optimizerOptions'] = [lr, mo, nesterov]
+        if (not first):
+            modelArgs.append(target)
+        first = False
+        target = tmodel.copy()
+        index += 1
+
+def addRMSprop(modelArgs,tmodel, numKeepIndexes):
+    target = tmodel
+    learningRates = [0.1,0.01,0.001,0.0001]
+    rhos = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
+    
+    total = len(learningRates) + len(rhos)
+    ci = 0
+    for i in range(len(target)):
+        if (target[i]['layer'] == 'compile'):
+            ci = i
+    first = True
+    keepIndexes = np.concatenate((np.array([0]),np.random.randint(1,total,size=numKeepIndexes-1)))
+    index=0
+    for lr, rho in [(lr, rho) for lr in learningRates for rho in rhos]:
+        if (index not in keepIndexes):
+            index += 1
+            continue
+        target[ci]['optimizerOptions'] = [lr, rho]
+        if (not first):
+            modelArgs.append(target)
+        first = False
+        target = tmodel.copy()
+        index += 1
         
 def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters = False , numKeepIndexes = 1000, kernalPreset=-1):
     useStartingDividers = False
@@ -173,6 +288,7 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
             'kernel_initializer': kernelInitializer,
             'bias_initializer': biasInitializer
         })
+        
         modelArgs[-1].append({
             'layer': 'compile',
             'optimizer': optimizer,

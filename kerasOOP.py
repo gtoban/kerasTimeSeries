@@ -3,8 +3,7 @@ import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
-from tensorflow.keras import backend as K
-from tensorflow.keras import metrics
+from tensorflow.keras import backend as K, metrics, optimizers
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
 from scipy import signal as scisig
@@ -129,7 +128,18 @@ class keras_ann(object):
             'loss': 'categorical_crossentropy',
             'metrics':['acc']
         }], inputShape = [3000,1]):
+        def getOptimizer(optimizer, options):
+            if (optimizer == 'sgd'):
+                return optimizers.SGD(lr=options[0], momentum=options[1], nesterov=options[2])
+                    
+            if (optimizer == 'adam'):
+                return optimizers.Adam(lr=options[0], beta_1=options[1], beta_2=options[2], amsgrad=options[3])
 
+            if (optimizer == 'nadam'):
+                return optimizers.Nadam(lr=options[0], beta_1=options[1], beta_2=options[2])
+
+            if (optimizer == 'rmsprop'):
+                return optimizers.RMSprop(lr=options[0],rho=options[1])
         #
         # For First Layer, input requried
         #
@@ -166,8 +176,14 @@ class keras_ann(object):
             elif (modelArg['layer'] == 'compile'):
                 model = Model(Xtensor, model)
                 #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
-                model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
-                    loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+                if ('optimizerOptions' in modelArg.keys()):
+                    print()
+                    model.compile(optimizer=getOptimizer(modelArg['optimizer'],
+                                                             modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
+                                                             loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+                else: 
+                    model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
+                                      loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
                     #metrics=['acc']) #metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
 
         #model = Sequential()
