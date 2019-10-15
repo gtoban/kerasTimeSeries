@@ -11,7 +11,7 @@ import json
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
-numOfInputFiles = 12
+numOfInputFiles = 5
 def main():
     print("Initializing")
     myAnn = keras_ann()
@@ -41,7 +41,7 @@ def main():
     dataFiles = ",".join(inputData())
     cvFolds = 10
     valPerc = 0.10
-    epochs = 500
+    epochs = 50
     batchSize =int(((myData.record_count*(1-valPerc))/cvFolds)+1)
     with open("fileTrainTestParams.txt",'w') as params:
         params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
