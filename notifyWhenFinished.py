@@ -19,8 +19,8 @@ def sendEmail(password):
 
 def main():
     if (len(sys.argv) > 1):
-        password = sys.argv[0]
-        pid = sys.argv[1]
+        password = sys.argv[1]
+        pid = sys.argv[2]
     else:        
         password = input("Enter password: ")
         pid = input("Enter PID: ")
