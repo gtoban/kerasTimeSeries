@@ -3,7 +3,7 @@ import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
-from tensorflow.keras.callbacks import EarlyStopping
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, 
 from tensorflow.keras import backend as K, metrics, optimizers
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
@@ -233,10 +233,21 @@ class keras_ann(object):
             if hasattr(layer, 'bias_initializer'):
                 layer.bias.initializer.run(session=session)
     
-    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None):
+    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveWeights=False, visualize=False):
         # create CV dat LOOV 
         #numSplits = 2
         Kf = StratifiedKFold(n_splits=numSplits)
+        callBacks = [EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)]
+        if (visualize):
+            callBacks.append(TensorBoard(log_dir='./logs',
+                                             histogram_freq=3,
+                                             write_graph=False,
+                                             write_images=False,
+                                             update_freq='epoch',
+                                             profile_batch=2,
+                                             embeddings_freq=0,
+                                             embeddings_metadata=None))
+
         #for each parameter set
         # make a model
         #
@@ -257,8 +268,11 @@ class keras_ann(object):
                 #model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
-                    earlyStop = EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)
-                    fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=[earlyStop] )
+                    
+                    fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
+                    if (saveWeights):
+                        modelWeightFile = f'{modelNum}.{j}.weights.h5'
+                        model.save_weights(modelWeightFile)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):

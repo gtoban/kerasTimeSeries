@@ -26,7 +26,7 @@ def main():
     #addToModels(modelArgs)
     print("Collecting Models")
     #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    getCandidates(modelArgs, fname="topTen.csv", optimize = True)
+    getCandidates(modelArgs, fname="topTwo.csv", optimize = True)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -51,7 +51,7 @@ def main():
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize)
+        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=True, visualize=True)
 
 def inputData():
     #this is the entire list
