@@ -3,6 +3,7 @@ import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
+from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras import backend as K, metrics, optimizers
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
@@ -256,8 +257,8 @@ class keras_ann(object):
                 #model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
-                    
-                    fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs)
+                    earlyStop = EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)
+                    fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=[earlyStop] )
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):
