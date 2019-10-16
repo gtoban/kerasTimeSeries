@@ -42,7 +42,7 @@ def main():
     cvFolds = 10
     valPerc = 0.10
     epochs = 100
-    batchSize =None #int(((myData.record_count*(1-valPerc))/cvFolds)+1)
+    batchSize = int(((myData.record_count*(1-valPerc))/cvFolds)+1)
     with open("fileTrainTestParams.txt",'w') as params:
         params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
         params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
