@@ -233,7 +233,7 @@ class keras_ann(object):
             if hasattr(layer, 'bias_initializer'):
                 layer.bias.initializer.run(session=session)
     
-    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveWeights=False, visualize=False):
+    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveWeights=False, visualize=False, saveLoc=''):
         # create CV dat LOOV 
         #numSplits = 2
         Kf = StratifiedKFold(n_splits=numSplits)
@@ -271,7 +271,7 @@ class keras_ann(object):
                     
                     fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
                     if (saveWeights):
-                        modelWeightFile = f'{modelNum}.{j}.weights.h5'
+                        modelWeightFile = saveLoc + f'{modelNum}.{j}.weights.h5'
                         model.save_weights(modelWeightFile)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0

@@ -15,6 +15,7 @@ numOfInputFiles = 5
 def main():
     print("Initializing")
     myAnn = keras_ann()
+    myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
 
     lowFreq = 3.5
@@ -26,7 +27,7 @@ def main():
     #addToModels(modelArgs)
     print("Collecting Models")
     #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    getCandidates(modelArgs, fname="topTwo.csv", optimize = True)
+    getCandidates(modelArgs, fname="topTwo.csv", optimize = False)
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -51,7 +52,7 @@ def main():
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=True, visualize=True)
+        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=True, visualize=False, saveLoc=myloc)
 
 def inputData():
     #this is the entire list
