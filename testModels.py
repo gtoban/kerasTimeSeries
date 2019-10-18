@@ -1,13 +1,9 @@
 import pandas as pd
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Conv1D, Flatten
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
-from sklearn.model_selection import RandomizedSearchCV
-from kerasOOP import keras_ann, ann_data
-import os
 import json
+import os
+from os import listdir
+from kerasOOP import keras_ann, ann_data
 
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
@@ -16,22 +12,20 @@ def main():
     print("Initializing")
     myAnn = keras_ann()
     myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
+    weightPath=os.path.expanduser('~') + "/localstorage/kerasTimeSeries/myweights/theta/"
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
-
-    lowFreq = 7.5
-    highFreq = 13.0
-    kernelsize = 10
-    testing = True
     
-    modelArgs = [] #getModels() small models only for now!
-    #addToModels(modelArgs)
+    modelArgs = [] 
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    #getCandidates(modelArgs, fname="topTwo.csv", optimize = False)
-    myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
-    
-    
-    
+    getCandidates(modelArgs, fname=weightPath+"topTwo.csv", optimize = False)
+    weights = []
+    getWeights(weights,weightPath)
+    #print(modelArgs)
+    #print(weights)
+    #return
+    lowFreq = 3.5
+    highFreq = 7.5
+    testing = False
     if (testing):
         myData.readData()
     else:
@@ -39,21 +33,27 @@ def main():
     myData.filterFrequencyRange(low=lowFreq, high=highFreq)
     myData.expandDims()
     myData.normalize()
-    dataFiles = ",".join(inputData())
-    cvFolds = 10
-    valPerc = 0.10
-    epochs = 100
-    batchSize = int(((myData.record_count*(1-valPerc))/cvFolds)+1)
-    with open("fileTrainTestParams.txt",'w') as params:
-        params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
-        params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
-        params.write(f"batchSize: {batchSize}\n")
-        params.write(f"frequency: {lowFreq} - {highFreq}")
-    if (testing):
-        myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
-    else:
-        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=True, visualize=False, saveLoc=myloc)
+    
+    myAnn.testModel(modelArgs,myData.data,myData.labels,weights=weights,loadLoc=weightPath)
 
+
+    
+def getWeights(weights,myDir):
+
+    currentID=''
+    ids = []
+    cidList = {}
+    for filename in listdir(myDir):        
+        if ('.h5' in filename):
+            tid = int(filename.split('.')[0])
+            if (tid not in ids):
+                ids.append(tid)
+                cidList[tid] = []
+            cidList[tid].append(filename)
+    for myid in sorted(ids):
+        weights.append(cidList[myid])
+        
+        
 def inputData():
     #this is the entire list
     #return np.array("input001.csv,input002.csv,input011.csv,input012.csv,input031.csv,input032.csv,input041.csv,input042.csv,input081.csv,input082.csv,input091.csv,input101.csv,input112.csv,input142.csv,input151.csv,input152.csv,input161.csv,input162.csv,input171.csv,input172.csv".split-(","))
@@ -203,9 +203,9 @@ def addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=True, manyFilters
     if (useStartingDividers):
         layerSizeStarters = range(1,11)
     else:   
-        layerSizeStarters = [10,50,100,200,400,800]
-    layerSizeDecreases = range(1,6)
-    hiddenLayers = range(1,11)
+        layerSizeStarters = [800] #[10,50,100,200,400,800]
+    layerSizeDecreases = [1]#range(1,6)
+    hiddenLayers = [10]#range(1,11)
     poolTypes = ['maxpool1d','avgpool1d',None]
     poolSizes = [2,4,8,12,24]    
     strideDownscaleFactors = [1,2,3,4,None]

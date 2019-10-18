@@ -51,6 +51,7 @@ def main():
             p = subprocess.Popen(["tail","-n","100","status.txt"], stdout=subprocess.PIPE)
             status = str(p.communicate()[0])
             sendStatus(password, status)
+        si += 1
     sendEmail(password)
     
 

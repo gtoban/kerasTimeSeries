@@ -3,7 +3,7 @@ import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
-from tensorflow.keras.callbacks import EarlyStopping, TensorBoard, 
+from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras import backend as K, metrics, optimizers
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
@@ -343,6 +343,50 @@ class keras_ann(object):
         modelFile.close()
         resultFile.close()
 
+    def testModel(self, paramSets,X,Y, weights=[], loadLoc=""):
+        print("modelNum|weightSet|True REM|False REM|False NonREM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score")
+        modelNum=0
+        for paramSet in paramSets:
+            try:
+                #print("loading Model")
+                model = self.convModel(paramSet)
+                for weightSet in weights[modelNum]:
+                    #print("loading: ", loadLoc + weightSet)
+                    model.load_weights(loadLoc + weightSet)
+                    Ypred = np.zeros((Y.shape[0],Y.shape[1]))
+                    Yi = 0
+                    #print("predicting")
+                    for pred in np.argmax(model.predict(X, batch_size=None), axis=1):
+                        Ypred[Yi][pred] = 1
+                        Yi += 1
+
+                    
+                    tp=tn=fn=fp=0
+                    Yi= 0
+                    for y in Y:
+                        tp += Ypred[Yi][0]*y[0]
+                        fp += max(Ypred[Yi][0]-y[0],0)
+                        tn += Ypred[Yi][1]*y[1]
+                        fn += max(Ypred[Yi][1]-y[1],0)
+                        Yi+=1
+                       
+                    acc=sens=spec=prec=rec=f1=0
+                    acc=(tp+tn)/(tp+tn+fp+fn)
+                    if (tp+fn > 0):
+                        sens=tp/(tp+fn)
+                    if (tn+fp > 0):
+                        spec=tn/(tn+fp)
+                    if (tp+fp > 0):
+                        prec=tp/(tp+fp)
+                    if (tp+fn > 0):
+                        rec=tp/(tp+fn)
+                    if (prec+rec > 0):
+                        f1=2*((prec*rec)/(prec+rec))
+                    print(f"{modelNum}|{weightSet}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}")
+            except Exception as e:
+                print("ERROR",sys.esc_info()[0])
+            modelNum += 1
+           
     def buildModelStack(self, X,Y,convModel=[],auto=[],mem=[],dense=[],order=[]):
         #X = np.array(X)
         #Y = np.array(Y)
