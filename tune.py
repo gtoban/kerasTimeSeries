@@ -26,8 +26,8 @@ def main():
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    #getCandidates(modelArgs, fname="topTwo.csv", optimize = False)
+    #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
+    getCandidates(modelArgs, optimize = False) #, fname="topTwo.csv"
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -73,18 +73,26 @@ def getCandidates(modelArgs, fname="candidate.csv", optimize = False):
             for layer in c:
                 if (layer["layer"] == 'compile'):
                     #['adam','sgd','rmsprop','nadam']
+                    keepFirst = False
+                    try:
+                        if (len(layer['optimizerOptions']) > 0):
+                            keepFirst = True
+                        else:
+                            keepFirst = False
+                    except:
+                        keepFirst = False
                     if (layer['optimizer'] == 'sgd'):
-                        addSGD(modelArgs, c, int(100/numOfCandidates))
+                        addSGD(modelArgs, c, int(100/numOfCandidates), keepFirst)
                     
                     if (layer['optimizer'] == 'adam'):
-                        addAdam(modelArgs, c, int(100/numOfCandidates))
+                        addAdam(modelArgs, c, int(100/numOfCandidates), keepFirst)
 
                     if (layer['optimizer'] == 'nadam'):
-                        addNAdam(modelArgs, c, int(100/numOfCandidates))
+                        addNAdam(modelArgs, c, int(100/numOfCandidates), keepFirst)
 
                     if (layer['optimizer'] == 'rmsprop'):
-                        addRMSprop(modelArgs, c, int(100/numOfCandidates))
-def addAdam(modelArgs, tmodel, numKeepIndexes):
+                        addRMSprop(modelArgs, c, int(100/numOfCandidates), keepFirst)
+def addAdam(modelArgs, tmodel, numKeepIndexes, keepFirst):
     target = tmodel
     learningRates = [0.1,0.01,0.001,0.0001]
     beta1s = [0.98,0.99,0.999,0.9999]
@@ -102,14 +110,18 @@ def addAdam(modelArgs, tmodel, numKeepIndexes):
         if (index not in keepIndexes):
             index += 1
             continue
-        target[ci]['optimizerOptions'] = [lr, beta1, beta2, amsgrad]
-        if (not first):
+        
+        if (first):
+            if (not keepFirst):
+                target[ci]['optimizerOptions'] = [lr, beta1, beta2, amsgrad]
+        else:
+            target[ci]['optimizerOptions'] = [lr, beta1, beta2, amsgrad]
             modelArgs.append(target)
         first = False
         target = tmodel.copy()
         index += 1
 
-def addNAdam(modelArgs, tmodel, numKeepIndexes):
+def addNAdam(modelArgs, tmodel, numKeepIndexes, keepFirst):
     target = tmodel
     learningRates = [0.1,0.01,0.001,0.0001]
     beta1s = [0.98,0.99,0.999,0.9999]
@@ -127,14 +139,18 @@ def addNAdam(modelArgs, tmodel, numKeepIndexes):
         if (index not in keepIndexes):
             index += 1
             continue
-        target[ci]['optimizerOptions'] = [lr, beta1, beta2]
-        if (not first):
+        
+        if (first):
+            if (not keepFirst):
+                target[ci]['optimizerOptions'] = [lr, beta1, beta2]
+        else:
+            target[ci]['optimizerOptions'] = [lr, beta1, beta2]
             modelArgs.append(target)
         first = False
         target = tmodel.copy()
         index += 1
 
-def addSGD(modelArgs,tmodel, numKeepIndexes):
+def addSGD(modelArgs,tmodel, numKeepIndexes, keepFirst):
     target = tmodel
     learningRates = [0.1,0.01,0.001,0.0001]
     momentums = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
@@ -151,14 +167,18 @@ def addSGD(modelArgs,tmodel, numKeepIndexes):
         if (index not in keepIndexes):
             index += 1
             continue
-        target[ci]['optimizerOptions'] = [lr, mo, nesterov]
-        if (not first):
+        
+        if (first):
+            if (not keepFirst):
+                target[ci]['optimizerOptions'] = [lr, mo, nesterov]
+        else:
+            target[ci]['optimizerOptions'] = [lr, mo, nesterov]
             modelArgs.append(target)
         first = False
         target = tmodel.copy()
         index += 1
 
-def addRMSprop(modelArgs,tmodel, numKeepIndexes):
+def addRMSprop(modelArgs,tmodel, numKeepIndexes, keepFirst):
     target = tmodel
     learningRates = [0.1,0.01,0.001,0.0001]
     rhos = [0.0,0.1,0.3,0.5,0.7,0.9,0.99]
@@ -175,8 +195,12 @@ def addRMSprop(modelArgs,tmodel, numKeepIndexes):
         if (index not in keepIndexes):
             index += 1
             continue
-        target[ci]['optimizerOptions'] = [lr, rho]
-        if (not first):
+        
+        if (first):
+            if (not keepFirst):
+                target[ci]['optimizerOptions'] = [lr, rho]
+        else:
+            target[ci]['optimizerOptions'] = [lr, rho]
             modelArgs.append(target)
         first = False
         target = tmodel.copy()

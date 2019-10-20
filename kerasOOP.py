@@ -75,16 +75,31 @@ class ann_data(object):
         
     def filterFrequencyRange(self, low=None, high=None):
         print("Frequency Range")
+        if (low == None and high == None):
+            return
         tansitionRate = 0.1
         sampleFrequency = 100
         filterOrder = 8*np.round(sampleFrequency/low)+1
-        filterShape = [0,0,1,1,0,0]
-        filterFrequencies =     [0,
-                                 low*(1-tansitionRate),
-                                 low,
-                                 high,
-                                 high+high*tansitionRate,
-                                 sampleFrequency/2]
+        if (high == None): #Allow high frequency ranges
+            filterShape = [0,0,1,1]
+            filterFrequencies =     [0,
+                                    low*(1-tansitionRate),
+                                    low,
+                                    sampleFrequency/2]
+        elif (low == None): #allow low frequency ranges
+            filterShape = [1,1,0,0]
+            filterFrequencies =     [0,
+                                    high,
+                                    high+high*tansitionRate,
+                                    sampleFrequency/2]
+        else:        
+            filterShape = [0,0,1,1,0,0]
+            filterFrequencies =     [0,
+                                    low*(1-tansitionRate),
+                                    low,
+                                    high,
+                                    high+high*tansitionRate,
+                                    sampleFrequency/2]
         filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape, fs=sampleFrequency)
         myError = 0
         try:
