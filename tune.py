@@ -22,12 +22,13 @@ def main():
     highFreq = 13.0
     kernelsize = 10
     testing = True
-    
+    optimizeOptimizer = True
+    saveWeights = False
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
     #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    getCandidates(modelArgs, optimize = False) #, fname="topTwo.csv"
+    getCandidates(modelArgs, optimize = optimizeOptimizer) #, fname="topTwo.csv"
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -52,7 +53,7 @@ def main():
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=True, visualize=False, saveLoc=myloc)
+        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=saveWeights, visualize=False, saveLoc=myloc)
 
 def inputData():
     #this is the entire list
@@ -127,7 +128,7 @@ def addNAdam(modelArgs, tmodel, numKeepIndexes, keepFirst):
     beta1s = [0.98,0.99,0.999,0.9999]
     beta2s = [0.98,0.99,0.999,0.9999]
     
-    total = len(learningRates) * len(beta1s) * len(beta2s) * len(amsgrads)
+    total = len(learningRates) * len(beta1s) * len(beta2s)
     ci = 0
     for i in range(len(target)):
         if (target[i]['layer'] == 'compile'):
