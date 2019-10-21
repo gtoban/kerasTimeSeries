@@ -1,23 +1,17 @@
 #!/bin/bash 
 notify=$1
 #
-{
-    python3 tune.py >status.txt 2>error.txt &
-} || {
-
+if ! python3 tune.py >status.txt 2>error.txt & ; then
     /share/apps/Python-3.6.8/bin/python3.6 tune.py >status.txt 2>error.txt &
-}
+fi
 pid=$!
 echo $pid
 if [ "$notify" = "1" ]; then
     read -sp 'Password: ' password
     
-    {
-	python3 notifyWhenFinished.py $password $pid &
-    } || {
-
+    if ! python3 notifyWhenFinished.py $password $pid & ; then
 	/share/apps/Python-3.6.8/bin/python3.6 notifyWhenFinished.py $password $pid &
-    }
+    fi
 
     
 fi
