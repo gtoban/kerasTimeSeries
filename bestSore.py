@@ -104,5 +104,5 @@ def main():
                     
         print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
     topten = candidates.iloc[:2]
-    #topten[["testID","modelNum","model"]].to_csv("topTwo.csv",sep="|",index=False,quoting=3) #csv.QUOTE_NONE
+    topten[["testID","modelNum","model"]].to_csv("topTwo.csv",sep="|",index=False,quoting=3) #csv.QUOTE_NONE
 main()

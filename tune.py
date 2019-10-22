@@ -18,17 +18,15 @@ def main():
     myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
 
-    lowFreq = 7.5
-    highFreq = 13.0
-    kernelsize = 10
-    testing = True
-    optimizeOptimizer = True
+    [lowFreq, highFreq, kernelsize] = ann_data.getFreqBand('delta')
+    testing = False
+    optimizeOptimizer = False
     saveWeights = False
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    #addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    getCandidates(modelArgs, optimize = optimizeOptimizer) #, fname="topTwo.csv"
+    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
+    #getCandidates(modelArgs, optimize = optimizeOptimizer) #, fname="topTwo.csv"
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -40,6 +38,9 @@ def main():
     myData.filterFrequencyRange(low=lowFreq, high=highFreq)
     myData.expandDims()
     myData.normalize()
+    print(f"normSTD  : {myData.normSTD}\n")
+    print(f"normMean : {myData.normMean}")
+    return
     dataFiles = ",".join(inputData())
     cvFolds = 10
     valPerc = 0.10
@@ -49,7 +50,9 @@ def main():
         params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
         params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
         params.write(f"batchSize: {batchSize}\n")
-        params.write(f"frequency: {lowFreq} - {highFreq}")
+        params.write(f"frequency: {lowFreq} - {highFreq}\n")
+        params.write(f"normSTD  : {myData.normSTD}\n")
+        params.write(f"normMean : {myData.normMean}")
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:

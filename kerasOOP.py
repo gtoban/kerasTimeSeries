@@ -67,11 +67,26 @@ class ann_data(object):
         
         print("shape:", self.data.shape)
 
-    def normalize(self):
+    def normalize(self, normSTD = None, normMean = None):
         print("Normalize")
-        self.normSTD = np.std(self.data)
-        self.normMean = np.mean(self.data)
+        if (normSTD is None):
+            self.normSTD = np.std(self.data)
+            self.normMean = np.mean(self.data)
+        else:
+            self.normSTD = normSTD
+            self.normMean = normMean
         self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
+    def getFreqBand(freqBand):
+        if (freqBand == 'delta'):
+            return [None, 3.5, 2]
+        elif (freqBand == 'theta'):
+            return [3.5,7.5,5]
+        elif (freqBand == 'alpha'):
+            return [7.5,13.0,10]
+        elif (freqBand == 'beta1'):
+            return [13.0, 25.0, 19]
+        elif (freqBand == 'beta2'):
+            return [25.0, 45.0, 35]
         
     def filterFrequencyRange(self, low=None, high=None):
         print("Frequency Range")

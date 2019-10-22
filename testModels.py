@@ -4,15 +4,19 @@ import json
 import os
 from os import listdir
 from kerasOOP import keras_ann, ann_data
-
+import sys
 #NOTE: FLAG FOR TESTING SMALL MODELS ONLY!!
 smallModelOnly = True
-numOfInputFiles = 5
+numOfInputFiles = 10
 def main():
+    if (len(sys.argv) < 2):
+        freqBand = 'theta'
+    else:
+        freqBand = sys.argv[1]
     print("Initializing")
     myAnn = keras_ann()
     myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
-    weightPath=os.path.expanduser('~') + "/localstorage/kerasTimeSeries/myweights/theta/"
+    weightPath=os.path.expanduser('~') + "/localstorage/kerasTimeSeries/myweights/" + freqBand + "/"
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
     
     modelArgs = [] 
@@ -20,11 +24,12 @@ def main():
     getCandidates(modelArgs, fname=weightPath+"topTwo.csv", optimize = False)
     weights = []
     getWeights(weights,weightPath)
+    [normSTD, normMean] = getNorm(weightPath)
+    [lowFreq, highFreq, _] = ann_data.getFreqBand(freqBand)
     #print(modelArgs)
     #print(weights)
     #return
-    lowFreq = 3.5
-    highFreq = 7.5
+    
     testing = False
     if (testing):
         myData.readData()
@@ -32,11 +37,23 @@ def main():
         myData.readData(fnames=inputData())
     myData.filterFrequencyRange(low=lowFreq, high=highFreq)
     myData.expandDims()
-    myData.normalize()
+    myData.normalize(normSTD=normSTD, normMean=normMean)
     
     myAnn.testModel(modelArgs,myData.data,myData.labels,weights=weights,loadLoc=weightPath)
 
 
+def getNorm(myDir):
+    normSTD = normMean = None
+    for filename in listdir(myDir):
+        if 'fileTrainTestParams.txt' in filename:
+            with open(myDir + filename) as pfile:
+                for line in pfile:
+                    if ('normSTD' in  line):
+                        normSTD = float(line.split(':')[1])
+                    elif ('normMean' in line):
+                        normMean = float(line.split(':')[1])
+                        
+            return [normSTD, normMean]
     
 def getWeights(weights,myDir):
 
