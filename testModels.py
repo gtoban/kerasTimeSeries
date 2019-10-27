@@ -23,8 +23,8 @@ def main():
     print("Collecting Models")
     getCandidates(modelArgs, fname=weightPath+"topTwo.csv", optimize = False)
     weights = []
-    getWeights(weights,weightPath)
-    [normSTD, normMean] = getNorm(weightPath)
+    myAnn.getWeights(weights,weightPath)
+    [normSTD, normMean] = myAnn.getNorm(weightPath)
     [lowFreq, highFreq, _] = ann_data.getFreqBand(freqBand)
     #print(modelArgs)
     #print(weights)

@@ -5,12 +5,13 @@ from tensorflow.keras.models import Sequential, Model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras import backend as K, metrics, optimizers
+from tensorflow.keras.utils import  plot_model
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
 from scipy import signal as scisig
 import signal
 import sys
-
+from os import listdir
 
 class GracefulKiller:
   kill_now = False
@@ -206,53 +207,20 @@ class keras_ann(object):
                                            padding=modelArg['padding'])(model)
             elif (modelArg['layer'] == 'compile'):
                 model = Model(Xtensor, model)
-                #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
-                if ('optimizerOptions' in modelArg.keys()):
-                    print()
-                    model.compile(optimizer=getOptimizer(modelArg['optimizer'],
-                                                             modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
-                                                             loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
-                else: 
-                    model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
-                                      loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
-                    #metrics=['acc']) #metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
-
-        #model = Sequential()
-        #
-        ##
-        ## For First Layer, input requried
-        ##
-        #modelArg= modelArgs[0]
-        #if (modelArg['layer'] == 'conv1d'):
-        #    model.add(Conv1D(filters=modelArg['no_filters'], kernel_size=modelArg['kernal_size'], activation=modelArg['activation'], input_shape=self.inputShape)) #shape batch, steps, channels
-        #elif (modelArg['layer'] == 'dense'):
-        #        model.add(Dense(activation=modelArg['activation'], input_shape=self.inputShape))
-        #    
-        ##
-        ## For all other layers
-        ##
-        #for modelArg in modelArgs[1:]:
-        #    if (modelArg['layer'] == 'conv1d'):
-        #        model.add(Conv1D(filters=modelArg['no_filters'], kernel_size=modelArg['kernal_size'], activation=modelArg['activation'])) #shape batch, steps, channels
-        #    elif (modelArg['layer'] == 'flatten'):
-        #        model.add(Flatten())
-        #
-        #    elif (modelArg['layer'] == 'dense'):
-        #        model.add(Dense(modelArg['output'], activation=modelArg['activation']))
-        #    elif (modelArg['layer'] == 'maxpool1d'):
-        #        model.add(MaxPooling1D(pool_size=modelArg['pool_size'],
-        #                                   strides=modelArg['strides'],
-        #                                   padding=modelArg['padding']))
-        #    elif (modelArg['layer'] == 'avgpool1d'):
-        #        model.add(AveragePooling1D(pool_size=modelArg['pool_size'],
-        #                                   strides=modelArg['strides'],
-        #                                   padding=modelArg['padding']))
-        #    elif (modelArg['layer'] == 'compile'):
-        #        #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
-        #        model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
-        #            loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
-        #            #metrics=['acc']) #metrics.CategoricalAccuracy(), metrics.TrueNegatives(), metrics.TruePositives()]) #tf.keras.metrics.categorical_accuracy
+                self.compileModel(model,modelArg)
         return model
+
+    def compileModel(self,model,modelArg):
+        #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
+        if ('optimizerOptions' in modelArg.keys()):
+            #print()
+            model.compile(optimizer=getOptimizer(modelArg['optimizer'],
+             modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
+                              loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+        else: 
+            model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
+                                      loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+            
 
     #source: https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer
     def reset_weights(self, model):
@@ -263,7 +231,7 @@ class keras_ann(object):
             if hasattr(layer, 'bias_initializer'):
                 layer.bias.initializer.run(session=session)
     
-    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveWeights=False, visualize=False, saveLoc=''):
+    def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveModel=False, visualize=False, saveLoc=''):
         # create CV dat LOOV 
         #numSplits = 2
         Kf = StratifiedKFold(n_splits=numSplits)
@@ -302,7 +270,8 @@ class keras_ann(object):
                     fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
                     if (saveWeights):
                         modelWeightFile = saveLoc + f'{modelNum}.{j}.weights.h5'
-                        model.save_weights(modelWeightFile)
+                        #model.save_weights(modelWeightFile)
+                        model.save(modelWeightFile)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):
@@ -414,9 +383,65 @@ class keras_ann(object):
                         f1=2*((prec*rec)/(prec+rec))
                     print(f"{modelNum}|{weightSet}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}")
             except Exception as e:
-                print("ERROR",sys.esc_info()[0])
+                print("ERROR",sys.exc_info()[0])
             modelNum += 1
-           
+
+    def printModel(self, paramSets, weights=[], printLoc="", loadLoc=""):
+        modelNum=0
+        for paramSet in paramSets:
+            try:
+                print("paramSet")
+                model = self.convModel(paramSet)
+                for weightSet in weights[modelNum]:
+                    #pass
+                    print("loading: ", loadLoc + weightSet)
+                    model.load_weights(loadLoc + weightSet)
+                    for modelArg in paramSet[1:]:
+                        if (modelArg['layer'] == 'conv1d'):
+                            self.compileModel(model,modelArg)
+                    to_file = printLoc+f'model.{modelNum}.{weightSet}.png'
+                    print("print: ", to_file)
+                    #plot_model(model, to_file=to_file)
+                    #print(model.layers[0].get_config())
+                    #print(model.to_json())
+                    for layer in model.layers:
+                        print(layer.get_weights())
+                        print(layer.get_weights()[0])
+                    return
+            except Exception as e:
+                print("ERROR",sys.exc_info()[0])
+                print(e)
+            modelNum += 1
+
+
+    def getNorm(self, myDir):
+        normSTD = normMean = None
+        for filename in listdir(myDir):
+            if 'fileTrainTestParams.txt' in filename:
+                with open(myDir + filename) as pfile:
+                    for line in pfile:
+                        if ('normSTD' in  line):
+                            normSTD = float(line.split(':')[1])
+                        elif ('normMean' in line):
+                            normMean = float(line.split(':')[1])
+                        
+                return [normSTD, normMean]
+    
+    def getWeights(self,weights,myDir):
+
+        currentID=''
+        ids = []
+        cidList = {}
+        for filename in listdir(myDir):        
+            if ('.h5' in filename):
+                tid = int(filename.split('.')[0])
+                if (tid not in ids):
+                    ids.append(tid)
+                    cidList[tid] = []
+                cidList[tid].append(filename)
+        for myid in sorted(ids):
+            weights.append(cidList[myid])
+
     def buildModelStack(self, X,Y,convModel=[],auto=[],mem=[],dense=[],order=[]):
         #X = np.array(X)
         #Y = np.array(Y)

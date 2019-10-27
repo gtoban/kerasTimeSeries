@@ -18,15 +18,22 @@ def main():
     myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
 
-    [lowFreq, highFreq, kernelsize] = ann_data.getFreqBand('delta')
+                  #0       1       2       3       4  
+    freqBand = ['delta','theta','alpha','beta1','beta2'][1]    
+    [lowFreq, highFreq, kernelsize] = ann_data.getFreqBand(freqBand)
+
+                   # 0        1              2              3
+    useCandidate = ['', 'topTwo.csv', 'topTen.csv', 'candidate.csv'][1]
     testing = False
     optimizeOptimizer = False
-    saveWeights = False
+    saveModel = True
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
-    addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
-    #getCandidates(modelArgs, optimize = optimizeOptimizer) #, fname="topTwo.csv"
+    if (useCandidate == ''):
+        addToModelsTest_FrequencyFilters(modelArgs, addConvFilters=False, manyFilters=False, numKeepIndexes=100, kernalPreset=kernelsize)
+    else:
+        getCandidates(modelArgs, fname=useCandidate, optimize = optimizeOptimizer) #
     myAnn.updatePaths(outputPath = os.path.dirname(os.path.realpath(__file__)) + "/")
     
     
@@ -38,9 +45,6 @@ def main():
     myData.filterFrequencyRange(low=lowFreq, high=highFreq)
     myData.expandDims()
     myData.normalize()
-    print(f"normSTD  : {myData.normSTD}\n")
-    print(f"normMean : {myData.normMean}")
-    return
     dataFiles = ",".join(inputData())
     cvFolds = 10
     valPerc = 0.10
@@ -56,7 +60,7 @@ def main():
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:
-        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveWeights=saveWeights, visualize=False, saveLoc=myloc)
+        myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveModel=saveModel, visualize=False, saveLoc=myloc)
 
 def inputData():
     #this is the entire list
