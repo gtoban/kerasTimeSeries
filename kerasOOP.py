@@ -1,7 +1,7 @@
 import numpy as np
 import json
 import tensorflow as tf
-from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.models import Sequential, Model, load_model
 from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras import backend as K, metrics, optimizers
@@ -160,18 +160,7 @@ class keras_ann(object):
             'loss': 'categorical_crossentropy',
             'metrics':['acc']
         }], inputShape = [3000,1]):
-        def getOptimizer(optimizer, options):
-            if (optimizer == 'sgd'):
-                return optimizers.SGD(lr=options[0], momentum=options[1], nesterov=options[2])
-                    
-            if (optimizer == 'adam'):
-                return optimizers.Adam(lr=options[0], beta_1=options[1], beta_2=options[2], amsgrad=options[3])
-
-            if (optimizer == 'nadam'):
-                return optimizers.Nadam(lr=options[0], beta_1=options[1], beta_2=options[2])
-
-            if (optimizer == 'rmsprop'):
-                return optimizers.RMSprop(lr=options[0],rho=options[1])
+        
         #
         # For First Layer, input requried
         #
@@ -180,42 +169,67 @@ class keras_ann(object):
         #
         # For all other layers
         #
-        for modelArg in modelArgs[1:]:
+        print("BUIDLING==================================")
+        indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile'],0)
+        for modelArg in modelArgs:
+            indexes[modelArg['layer']] += 1
+            name = f"{modelArg['layer']}{indexes[modelArg['layer']]}"
             if (modelArg['layer'] == 'conv1d'):
+                print("CONVOLUTION1D===================================================")
                 model = Conv1D(filters=modelArg['no_filters'],
                                    kernel_size=modelArg['kernal_size'],
                                    padding=modelArg['padding'],
                                    activation=modelArg['activation'],
+                                   name=name,
                                    )(model)#shape batch, steps, channels
             elif (modelArg['layer'] == 'flatten'):
+                print("FLATTEN===================================================")
                 model = Flatten()(model)
 
             elif (modelArg['layer'] == 'dense'):
+                print("DENSE===================================================")
                 model = Dense(modelArg['output'],
                                   activation=modelArg['activation'],
                                   kernel_initializer=modelArg['kernel_initializer'],
-                                  bias_initializer=modelArg['bias_initializer'])(model)
+                                  bias_initializer=modelArg['bias_initializer'],
+                                  name=name)(model)
                 
                 
             elif (modelArg['layer'] == 'maxpool1d'):
+                print("MAXPOOL===================================================")
                 model = MaxPooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],
-                                           padding=modelArg['padding'])(model)
+                                           padding=modelArg['padding'],
+                                         name=name,)(model)
             elif (modelArg['layer'] == 'avgpool1d'):
+                print("AVGPOOL===================================================")
                 model = AveragePooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],
-                                           padding=modelArg['padding'])(model)
+                                           padding=modelArg['padding'],
+                                             name=name,)(model)
             elif (modelArg['layer'] == 'compile'):
+                print("COMPILECONVOLUTION1D===================================================")
                 model = Model(Xtensor, model)
                 self.compileModel(model,modelArg)
         return model
+    def getOptimizer(self,optimizer, options):
+        if (optimizer == 'sgd'):
+            return optimizers.SGD(lr=options[0], momentum=options[1], nesterov=options[2])
+        
+        if (optimizer == 'adam'):
+            return optimizers.Adam(lr=options[0], beta_1=options[1], beta_2=options[2], amsgrad=options[3])
 
+        if (optimizer == 'nadam'):
+            return optimizers.Nadam(lr=options[0], beta_1=options[1], beta_2=options[2])
+        
+        if (optimizer == 'rmsprop'):
+            return optimizers.RMSprop(lr=options[0],rho=options[1])
+        
     def compileModel(self,model,modelArg):
         #NOTE: metrics are not used for training and therefor not really needed. The loss is the important one
         if ('optimizerOptions' in modelArg.keys()):
             #print()
-            model.compile(optimizer=getOptimizer(modelArg['optimizer'],
-             modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
+            model.compile(optimizer=self.getOptimizer(modelArg['optimizer'],modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
                               loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
         else: 
             model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
@@ -268,7 +282,7 @@ class keras_ann(object):
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
                     
                     fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
-                    if (saveWeights):
+                    if (saveModel):
                         modelWeightFile = saveLoc + f'{modelNum}.{j}.weights.h5'
                         #model.save_weights(modelWeightFile)
                         model.save(modelWeightFile)
@@ -386,27 +400,36 @@ class keras_ann(object):
                 print("ERROR",sys.exc_info()[0])
             modelNum += 1
 
-    def printModel(self, paramSets, weights=[], printLoc="", loadLoc=""):
+    def printModel(self, paramSets, weights=[], printLoc="", loadLoc="", X=None,Y=None):
         modelNum=0
         for paramSet in paramSets:
             try:
                 print("paramSet")
                 model = self.convModel(paramSet)
+                print(paramSet)
                 for weightSet in weights[modelNum]:
                     #pass
                     print("loading: ", loadLoc + weightSet)
+                    #model = load_model(loadLoc + weightSet)
+                    print()
+                    print("==================================")
+                    print("loading: ", loadLoc + weightSet)
+                    print("==================================")
+                    print()
                     model.load_weights(loadLoc + weightSet)
-                    for modelArg in paramSet[1:]:
-                        if (modelArg['layer'] == 'conv1d'):
-                            self.compileModel(model,modelArg)
+                    model.predict(X, batch_size=None)
+                    #for modelArg in paramSet[1:]:
+                    #    if (modelArg['layer'] == 'conv1d'):
+                    #        self.compileModel(model,modelArg)
                     to_file = printLoc+f'model.{modelNum}.{weightSet}.png'
                     print("print: ", to_file)
                     #plot_model(model, to_file=to_file)
                     #print(model.layers[0].get_config())
                     #print(model.to_json())
+                    print(model.summary())
                     for layer in model.layers:
-                        print(layer.get_weights())
-                        print(layer.get_weights()[0])
+                        #print(layer.get_weights())
+                        print(layer.get_weights().shape)
                     return
             except Exception as e:
                 print("ERROR",sys.exc_info()[0])

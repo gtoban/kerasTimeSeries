@@ -24,7 +24,7 @@ def main():
 
                    # 0        1              2              3
     useCandidate = ['', 'topTwo.csv', 'topTen.csv', 'candidate.csv'][1]
-    testing = False
+    testing = True
     optimizeOptimizer = False
     saveModel = True
     modelArgs = [] #getModels() small models only for now!
