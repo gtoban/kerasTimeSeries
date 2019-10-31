@@ -180,7 +180,7 @@ class keras_ann(object):
                                    kernel_size=modelArg['kernal_size'],
                                    padding=modelArg['padding'],
                                    activation=modelArg['activation'],
-                                   name=name,
+                                             name=name
                                    )(model)#shape batch, steps, channels
             elif (modelArg['layer'] == 'flatten'):
                 print("FLATTEN===================================================")
@@ -192,7 +192,8 @@ class keras_ann(object):
                                   activation=modelArg['activation'],
                                   kernel_initializer=modelArg['kernel_initializer'],
                                   bias_initializer=modelArg['bias_initializer'],
-                                  name=name)(model)
+                                             name=name
+                                  )(model)
                 
                 
             elif (modelArg['layer'] == 'maxpool1d'):
@@ -200,7 +201,8 @@ class keras_ann(object):
                 model = MaxPooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],
                                            padding=modelArg['padding'],
-                                         name=name,)(model)
+                                             name=name
+                                         )(model)
             elif (modelArg['layer'] == 'avgpool1d'):
                 print("AVGPOOL===================================================")
                 model = AveragePooling1D(pool_size=modelArg['pool_size'],
@@ -284,8 +286,8 @@ class keras_ann(object):
                     fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
                     if (saveModel):
                         modelWeightFile = saveLoc + f'{modelNum}.{j}.weights.h5'
-                        #model.save_weights(modelWeightFile)
-                        model.save(modelWeightFile)
+                        model.save_weights(modelWeightFile)
+                        #model.save(modelWeightFile)
                     Ypred = np.zeros((testInd.shape[0],Y.shape[1]))
                     Yi = 0
                     for pred in np.argmax(model.predict(X[testInd], batch_size=None), axis=1):
@@ -405,18 +407,18 @@ class keras_ann(object):
         for paramSet in paramSets:
             try:
                 print("paramSet")
-                model = self.convModel(paramSet)
+                #model = self.convModel(paramSet)
                 print(paramSet)
                 for weightSet in weights[modelNum]:
                     #pass
                     print("loading: ", loadLoc + weightSet)
-                    #model = load_model(loadLoc + weightSet)
+                    model = load_model(loadLoc + weightSet)
                     print()
                     print("==================================")
                     print("loading: ", loadLoc + weightSet)
                     print("==================================")
                     print()
-                    model.load_weights(loadLoc + weightSet)
+                    #model.load_weights(loadLoc + weightSet)
                     model.predict(X, batch_size=None)
                     #for modelArg in paramSet[1:]:
                     #    if (modelArg['layer'] == 'conv1d'):
