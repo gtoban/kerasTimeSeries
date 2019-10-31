@@ -169,13 +169,13 @@ class keras_ann(object):
         #
         # For all other layers
         #
-        print("BUIDLING==================================")
+        #print("BUIDLING==================================")
         indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile'],0)
         for modelArg in modelArgs:
             indexes[modelArg['layer']] += 1
             name = f"{modelArg['layer']}{indexes[modelArg['layer']]}"
             if (modelArg['layer'] == 'conv1d'):
-                print("CONVOLUTION1D===================================================")
+                #print("CONVOLUTION1D===================================================")
                 model = Conv1D(filters=modelArg['no_filters'],
                                    kernel_size=modelArg['kernal_size'],
                                    padding=modelArg['padding'],
@@ -183,11 +183,11 @@ class keras_ann(object):
                                              name=name
                                    )(model)#shape batch, steps, channels
             elif (modelArg['layer'] == 'flatten'):
-                print("FLATTEN===================================================")
+                #print("FLATTEN===================================================")
                 model = Flatten()(model)
 
             elif (modelArg['layer'] == 'dense'):
-                print("DENSE===================================================")
+                #print("DENSE===================================================")
                 model = Dense(modelArg['output'],
                                   activation=modelArg['activation'],
                                   kernel_initializer=modelArg['kernel_initializer'],
@@ -197,20 +197,20 @@ class keras_ann(object):
                 
                 
             elif (modelArg['layer'] == 'maxpool1d'):
-                print("MAXPOOL===================================================")
+                #print("MAXPOOL===================================================")
                 model = MaxPooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],
                                            padding=modelArg['padding'],
                                              name=name
                                          )(model)
             elif (modelArg['layer'] == 'avgpool1d'):
-                print("AVGPOOL===================================================")
+                #print("AVGPOOL===================================================")
                 model = AveragePooling1D(pool_size=modelArg['pool_size'],
                                            strides=modelArg['strides'],
                                            padding=modelArg['padding'],
                                              name=name,)(model)
             elif (modelArg['layer'] == 'compile'):
-                print("COMPILECONVOLUTION1D===================================================")
+                #print("COMPILECONVOLUTION1D===================================================")
                 model = Model(Xtensor, model)
                 self.compileModel(model,modelArg)
         return model
@@ -276,9 +276,10 @@ class keras_ann(object):
             json.dump(paramSet, modelFile)
             modelFile.write("\n")
             print("\n\n=================\nTesting Model " + str(modelNum) + "\n=================\n")
-            print(paramSet, flush=True)
+            #print(paramSet, flush=True)
             try:
                 model = self.convModel(paramSet)
+                print(model.summary())
                 #model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
@@ -407,18 +408,18 @@ class keras_ann(object):
         for paramSet in paramSets:
             try:
                 print("paramSet")
-                #model = self.convModel(paramSet)
+                model = self.convModel(paramSet)
                 print(paramSet)
                 for weightSet in weights[modelNum]:
                     #pass
                     print("loading: ", loadLoc + weightSet)
-                    model = load_model(loadLoc + weightSet)
+                    #model = load_model(loadLoc + weightSet)
                     print()
                     print("==================================")
                     print("loading: ", loadLoc + weightSet)
                     print("==================================")
                     print()
-                    #model.load_weights(loadLoc + weightSet)
+                    model.load_weights(loadLoc + weightSet)
                     model.predict(X, batch_size=None)
                     #for modelArg in paramSet[1:]:
                     #    if (modelArg['layer'] == 'conv1d'):
@@ -429,9 +430,11 @@ class keras_ann(object):
                     #print(model.layers[0].get_config())
                     #print(model.to_json())
                     print(model.summary())
-                    for layer in model.layers:
+                    print("===========")
+                    print("layer:",model.get_layer('conv1d1').get_weights())
+                    #for layer in model.layers:
                         #print(layer.get_weights())
-                        print(layer.get_weights().shape)
+                    #    print(layer.get_weights())
                     return
             except Exception as e:
                 print("ERROR",sys.exc_info()[0])
