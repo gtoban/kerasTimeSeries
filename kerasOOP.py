@@ -9,6 +9,7 @@ from tensorflow.keras.utils import  plot_model
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import f1_score, confusion_matrix, multilabel_confusion_matrix
 from scipy import signal as scisig
+from scipy import fftpack
 import signal
 import sys
 from os import listdir
@@ -47,12 +48,16 @@ class ann_data(object):
             f = open(self.dataPath + fname)
             line = f.readline().strip()
             while(line):
+                
+                
                 arow = line.split(",")
+                
                 self.labels[sample][0 if arow[0] == 'R' else 1] = 1
                 RVNR[0 if arow[0] == 'R' else 1] += 1
                 measure_count = 0
                 for ame in arow[1:]:
-                    self.data[sample][measure_count] = ame
+                    self.data[sample][measure_count] = float(ame)
+                    measure_count += 1
     
                 sample += 1
                 line = f.readline().strip()
@@ -125,6 +130,13 @@ class ann_data(object):
                 self.data[i] = scisig.filtfilt(filterKernel,1,self.data[i])
         except Exception as e:
             print(f"BAND RANGE ERROR epoch: {myError}")
+
+    def fourierAll(self):
+        allFreq = []
+        for i in range(self.data.shape[0]):
+            allFreq.append(fftpack.fft(self.data[i]))
+
+        return allFreq
     
 class keras_ann(object):
     def __init__(self):
