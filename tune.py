@@ -21,7 +21,7 @@ def main():
                   #0       1       2       3       4  
     freqBand = ['delta','theta','alpha','beta1','beta2'][3]    
     [lowFreq, highFreq, kernelsize] = ann_data.getFreqBand(freqBand)
-
+    lowFreq = highFreq = None
                    # 0        1              2              3
     useCandidate = ['', 'topTwo.csv', 'topTen.csv', 'candidate.csv'][0]
     testing = True

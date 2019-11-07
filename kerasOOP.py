@@ -29,8 +29,11 @@ class ann_data(object):
         self.outputPath = outputPath
         self.normSTD = 1
         self.normMean = 1
+        self.labToInd = {'W':0,'1':1, '2':2, '3': 3, '4': 4, 'R':5}
+        self.indToLab = ['W','1', '2', '3', '4', 'R']
         
     def readData(self, fnames=["input002.csv","input142.csv"]):
+        
         print("Starting Read")
         self.record_count = 0
         for fname in fnames:
@@ -41,6 +44,8 @@ class ann_data(object):
         sample = 0
         self.data = np.zeros((self.record_count,3000))
         self.labels = np.zeros((self.record_count,2))
+        self.obsLabels = np.zeros((self.record_count))
+        obsLabelsCount = {}
         for fname in fnames:
             
 
@@ -51,7 +56,11 @@ class ann_data(object):
                 
                 
                 arow = line.split(",")
-                
+                self.obsLabels[sample] = self.labToInd[arow[0]]
+                if arow[0] in obsLabelsCount.keys():
+                    obsLabelsCount[arow[0]] += 1
+                else:
+                    obsLabelsCount[arow[0]] = 1
                 self.labels[sample][0 if arow[0] == 'R' else 1] = 1
                 RVNR[0 if arow[0] == 'R' else 1] += 1
                 measure_count = 0
@@ -63,7 +72,8 @@ class ann_data(object):
                 line = f.readline().strip()
             f.close()
             print(f"{fname} -> REM: {RVNR[0]}; NonREM: {RVNR[1]}")
-            
+            for l in obsLabelsCount:
+                print(f"{l} : {obsLabelsCount[l]}")
                
         #return self.data, self.labels, self.record_count
 
@@ -94,40 +104,23 @@ class ann_data(object):
         elif (freqBand == 'beta2'):
             return [25.0, 45.0, 35]
         
-    def filterFrequencyRange(self, low=None, high=None):
+    def filterFrequencyRange(self, low=None, high=None, order=8):
         print("Frequency Range")
         if (low == None and high == None):
             return
-        tansitionRate = 0.1
-        sampleFrequency = 100
-        filterOrder = 8*np.round(sampleFrequency/low)+1
+        sampleFrequency = 100        
         if (high == None): #Allow high frequency ranges
-            filterShape = [0,0,1,1]
-            filterFrequencies =     [0,
-                                    low*(1-tansitionRate),
-                                    low,
-                                    sampleFrequency/2]
+            filtb,filta = scisig.butter(order,low/(sampleFrequency/2),btype='highpass')
         elif (low == None): #allow low frequency ranges
-            filterShape = [1,1,0,0]
-            filterFrequencies =     [0,
-                                    high,
-                                    high+high*tansitionRate,
-                                    sampleFrequency/2]
+            filtb,filta = scisig.butter(order,high/(sampleFrequency/2),btype='lowpass')
         else:        
-            filterShape = [0,0,1,1,0,0]
-            filterFrequencies =     [0,
-                                    low*(1-tansitionRate),
-                                    low,
-                                    high,
-                                    high+high*tansitionRate,
-                                    sampleFrequency/2]
-        filterKernel = scisig.firls(filterOrder,filterFrequencies,filterShape, fs=sampleFrequency)
+            filtb,filta = scisig.butter(order,[low/(sampleFrequency/2),high/(sampleFrequency/2)] ,btype='bandpass')
         myError = 0
         try:
             for i in range(self.data.shape[0]):
                 #print(i)
                 myError = i
-                self.data[i] = scisig.filtfilt(filterKernel,1,self.data[i])
+                self.data[i] = scisig.filtfilt(filtb,filta,self.data[i])
         except Exception as e:
             print(f"BAND RANGE ERROR epoch: {myError}")
 
