@@ -19,14 +19,14 @@ def main():
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
 
                   #0       1       2       3       4  
-    freqBand = ['delta','theta','alpha','beta1','beta2'][3]    
+    freqBand = ['delta','theta','alpha','beta1','beta2'][4]    
     [lowFreq, highFreq, kernelsize] = ann_data.getFreqBand(freqBand)
     lowFreq = highFreq = None
                    # 0        1              2              3
-    useCandidate = ['', 'topTwo.csv', 'topTen.csv', 'candidate.csv'][0]
+    useCandidate = ['', 'topTwo.csv', 'topTen.csv', 'candidate.csv'][3]
     testing = True
     optimizeOptimizer = False
-    saveModel = False
+    saveModel = True
     modelArgs = [] #getModels() small models only for now!
     #addToModels(modelArgs)
     print("Collecting Models")
@@ -48,8 +48,8 @@ def main():
     dataFiles = ",".join(inputData())
     cvFolds = 10
     valPerc = 0.10
-    epochs = 100
-    batchSize = int(((myData.record_count*(1-valPerc))/cvFolds)+1)
+    epochs = 1 if saveModel else 100
+    batchSize = 32 if saveModel else int(((myData.record_count*(1-valPerc))/cvFolds)+1)
     with open("fileTrainTestParams.txt",'w') as params:
         params.write(f"dataFiles: {dataFiles}\ncvFolds: {cvFolds}\n")
         params.write(f"validation_split: {valPerc}\nepoch: {epochs}\n")
@@ -57,6 +57,10 @@ def main():
         params.write(f"frequency: {lowFreq} - {highFreq}\n")
         params.write(f"normSTD  : {myData.normSTD}\n")
         params.write(f"normMean : {myData.normMean}")
+
+    if (saveModel):
+        myAnn.trainModel(modelArgs[:1],myData.data,myData.labels, valSplit=valPerc, epochs=epochs, batchSize=batchSize, visualize=False, saveLoc=myloc)
+        return
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
     else:

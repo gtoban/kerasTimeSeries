@@ -237,10 +237,12 @@ class keras_ann(object):
         if ('optimizerOptions' in modelArg.keys()):
             #print()
             model.compile(optimizer=self.getOptimizer(modelArg['optimizer'],modelArg['optimizerOptions']), #tf.train.AdamOptimizer(0.001),
-                              loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+                              loss=modelArg['loss'],
+                              metrics = ['acc']) #tf.keras.losses.categorical_crossentropy,
         else: 
             model.compile(optimizer=modelArg['optimizer'], #tf.train.AdamOptimizer(0.001),
-                                      loss=modelArg['loss']) #tf.keras.losses.categorical_crossentropy,
+                              loss=modelArg['loss'],
+                              metrics = ['acc']) #tf.keras.losses.categorical_crossentropy,
             
 
     #source: https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer
@@ -251,6 +253,65 @@ class keras_ann(object):
                 layer.kernel.initializer.run(session=session)
             if hasattr(layer, 'bias_initializer'):
                 layer.bias.initializer.run(session=session)
+
+    def trainModel(self, paramSets, X, Y, valSplit=0.0, epochs=1, batchSize=None, visualize=False, saveLoc=''):
+
+        callBacks = [EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)]
+        if (visualize):
+            callBacks.append(TensorBoard(log_dir='./logs',
+                                             histogram_freq=3,
+                                             write_graph=False,
+                                             write_images=False,
+                                             update_freq='epoch',
+                                             profile_batch=2,
+                                             embeddings_freq=0,
+                                             embeddings_metadata=None))
+            
+        modelFile = open(self.outputPath + "fileModel.csv", 'w')
+        resultFile = open(self.outputPath + "fileResult.csv",'w')
+        resultFile.write('modelNum|resultType|results\n')
+        modelNum = 0
+        for paramSet in paramSets:
+            
+            modelFile.write(str(modelNum) + "|")
+            json.dump(paramSet, modelFile)
+            modelFile.write("\n")
+            print("\n\n=================\nTraining Model " + str(modelNum) + "\n=================\n")
+            #print(paramSet, flush=True)
+            try:
+                model = self.convModel(paramSet)
+                print(model.summary())
+                #model.save_weights('temp_weights.h5')
+                
+                    
+                fitHistory = model.fit(X, Y, batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
+                
+                #resultFile.write(fitHistory.history)
+                #json.dump(fitHistory.history, resultFile)
+                #resultFile.write("\n")
+                for histItem in fitHistory.history:
+                    resultFile.write(str(modelNum) + '|'
+                                         + histItem + '|'
+                                         + '|'.join([str(item) for item in fitHistory.history[histItem]])
+                                         + '\n')
+                                                      
+                modelWeightFile = saveLoc + f'{modelNum}.weights.h5'
+                model.save_weights(modelWeightFile)
+                #model.save(modelWeightFile)
+                
+            except Exception as e:
+                print(str(e))
+                
+            K.clear_session()
+            modelNum+=1
+            
+            if self.killer.kill_now:
+                print("killed")
+                break
+        modelFile.close()
+        resultFile.close()
+        
+        
     
     def parameterSearch(self, paramSets, X, Y, numSplits=2,valSplit=0.0, epochs=1, batchSize=None,saveModel=False, visualize=False, saveLoc=''):
         # create CV dat LOOV 
