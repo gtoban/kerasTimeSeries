@@ -10,32 +10,49 @@ smallModelOnly = True
 numOfInputFiles = 10
 def main():
     if (len(sys.argv) < 2):
-        freqBand = 'theta'
+        freqBands = ['theta']
     else:
-        freqBand = sys.argv[1]
+        freqBands = []
+        for i in range(1,len(sys.argv)):
+            freqBands.append(sys.argv[i])
     print("Initializing")
     myAnn = keras_ann()
-    myloc = os.path.expanduser('~') + "/kerasTimeSeries/"
-    weightPath=os.path.expanduser('~') + "/localstorage/kerasTimeSeries/myweights/" + freqBand + "/"
+    myloc = os.path.expanduser('~') + "/kerasTimeSeries/"    
     myData = ann_data(dataPath= os.path.expanduser('~') + "/eegData/")
-    
-    modelArgs = [] 
-    print("Collecting Models")
-    getCandidates(modelArgs, fname=weightPath+"topTwo.csv", optimize = False)
-    weights = []
-    myAnn.getWeights(weights,weightPath)
-    [normSTD, normMean] = myAnn.getNorm(weightPath)
-    [lowFreq, highFreq, _] = ann_data.getFreqBand(freqBand)
-    #print(modelArgs)
-    #print(weights)
-    #return
-    
     testing = False
     if (testing):
         myData.readData()
     else:
         myData.readData(fnames=inputData())
-    myData.filterFrequencyRange(low=lowFreq, high=highFreq)
+        
+    for freqBand in freqBands:
+        print(f"FREQUENCY: {freqBand}")
+        weightPath=os.path.expanduser('~') + "/localstorage/kerasTimeSeries/myweights/" + freqBand + "/"
+        runTest(myAnn,myloc,weightPath,myData, freqBand)
+        
+def runTest(myAnn,myloc,weightPath,myData, freqBand):
+    modelArgs = [] 
+    print("Collecting Models")
+    fname = ''
+    for filename in listdir(weightPath):
+        if 'fileModel' in filename:
+            fname = filename
+            break
+    if (fname == ''):
+        print('file not found')
+        exit()
+    print(weightPath+fname)
+    getCandidates(modelArgs, fname=weightPath+fname, optimize = False)
+    weights = []
+    myAnn.getWeights(weights,weightPath)
+    [normSTD, normMean] = myAnn.getNorm(weightPath)
+    #[lowFreq, highFreq, _] = ann_data.getFreqBand(freqBand)
+    #print(modelArgs)
+    #print(weights)
+    #return
+    
+    
+    #myData.filterFrequencyRange(low=lowFreq, high=highFreq)
     myData.expandDims()
     myData.normalize(normSTD=normSTD, normMean=normMean)
     
@@ -80,7 +97,7 @@ def inputData():
 
 def getCandidates(modelArgs, fname="candidate.csv", optimize = False):
     
-    for index, candidate in pd.read_csv(fname, sep='|').iterrows():
+    for index, candidate in pd.read_csv(fname, sep='|',header=None,names=['modelId','model']).iterrows():
         modelArgs.append(json.loads(candidate["model"]))
 
     if (optimize):

@@ -2,7 +2,7 @@ import numpy as np
 import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model, load_model
-from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM
+from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM, TimeDistributed, Bidirectional
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras import backend as K, metrics, optimizers
 from tensorflow.keras.utils import  plot_model
@@ -22,6 +22,72 @@ class GracefulKiller:
 
   def exit_gracefully(self,signum, frame):
     self.kill_now = True
+    
+class cnn_data(object):
+    def __init__(self,dataPath="",outputPath=""):
+        self.dataPath = dataPath
+        self.outputPath = outputPath
+        self.normSTD = 1
+        self.normMean = 1
+        
+    def readData(self, fnames=["outinput002.csv","outinput142.csv"]):
+        
+        print("Starting Read")
+        self.record_count = 0
+        for fname in fnames:
+            with open(self.dataPath + fname) as f:
+                for line in f: 
+                    if (line.strip()):
+                        self.record_count += 1
+        self.record_count -= 2
+        sample = 0
+        # records use
+        # 3 eeg epochs in time each with
+        # 5 algorithms producing
+        # 2 predictions for REM vs NonREM
+        self.data = np.zeros((self.record_count,3,5*2))
+        self.labels = np.zeros((self.record_count,2))
+        self.obsLabels = np.zeros((self.record_count))
+        obsLabelsCount = {}
+        for fname in fnames:
+            
+
+            RVNR = [0,0] #RVNR REM Vs NonREM
+            f = open(self.dataPath + fname)
+            lines = []
+            lines.append(f.readline().strip())
+            lines.append(f.readline().strip())
+            lines.append(f.readline().strip())
+            while(lines[2]):
+                timeCount = 0
+                for line in lines:
+                    arow = line.split("|")
+                    measure_count = 0
+                    for ame in arow[1:]:
+                        self.data[sample][timeCount][measure_count] = float(ame)
+                        measure_count += 1
+                    timeCount += 1
+                    # use middle time for label
+                    if timeCount == 1:
+                        self.obsLabels[sample] = arow[0]
+                        if arow[0] in obsLabelsCount.keys():
+                            obsLabelsCount[arow[0]] += 1
+                        else:
+                            obsLabelsCount[arow[0]] = 1
+                        self.labels[sample][int(arow[0])] = 1
+                        RVNR[int(arow[0])] += 1
+                
+    
+                sample += 1
+                lines[0] = lines[1]
+                lines[1] = lines[2]
+                lines[2] = f.readline().strip()
+            f.close()
+            print(f"{fname} -> REM: {RVNR[0]}; NonREM: {RVNR[1]}")
+            for l in obsLabelsCount:
+                print(f"{l} : {obsLabelsCount[l]}")
+               
+        #return self.data, self.labels, self.record_count
     
 class ann_data(object):
     def __init__(self,dataPath="",outputPath=""):
@@ -142,44 +208,25 @@ class keras_ann(object):
         self.outputPath = outputPath
         self.dataPath = dataPath
         
-    def convModel(self, modelArgs=[
-        {
-            'layer': 'conv1d',
-            'no_filters': 64,
-            'kernal_size':10,
-            'activation':'relu'
-        },{
-            'layer': 'conv1d',
-            'no_filters': 32,
-            'kernal_size':10,
-            'activation':'relu'
-        },{
-            'layer': 'flatten'
-        },{
-            'layer': 'dense',
-            'output': 2,
-            'activation':'softmax'
-        },{
-            'layer': 'compile',
-            'optimizer': 'adam',
-            'loss': 'categorical_crossentropy',
-            'metrics':['acc']
-        }], inputShape = [3000,1]):
+    def convModel(self, modelArgs=[], inputShape = [3000,1], defaultInput=True):
         
         #
         # For First Layer, input requried
         #
-        model = Xtensor = Input(shape=inputShape)
+        if defaultInput:
+            model = Xtensor = Input(shape=inputShape)
                    
         #
         # For all other layers
         #
         #print("BUIDLING==================================")
-        indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile'],0)
+        indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile','lstm','input'],0)
         for modelArg in modelArgs:
             indexes[modelArg['layer']] += 1
             name = f"{modelArg['layer']}{indexes[modelArg['layer']]}"
-            if (modelArg['layer'] == 'conv1d'):
+            if (modelArg['layer'] == 'input'):
+                model = Xtensor = Input(shape=modelArg['shape'])
+            elif (modelArg['layer'] == 'conv1d'):
                 #print("CONVOLUTION1D===================================================")
                 model = Conv1D(filters=modelArg['no_filters'],
                                    kernel_size=modelArg['kernal_size'],
@@ -191,12 +238,29 @@ class keras_ann(object):
                 #print("FLATTEN===================================================")
                 model = Flatten()(model)
 
+            elif (modelArg['layer'] == 'lstm'):
+                tlstm = LSTM(modelArg['units'], return_sequences = modelArg['return_sequences'])
+                if 'wrapper' in modelArg.keys():
+                    if modelArg['wrapper'] == 'timedistributed':
+                        model = TimeDistributed(tlstm)(model)
+                    elif modelArg['wrapper'] == 'bidirectional':
+                        model = Bidirectional(tlstm)(model)
+                elif 'wrappers' in modelArg.keys():
+                    for wrapper in modelArg['wrappers']:
+                        if wrapper == 'timedistributed':
+                            tlstm = TimeDistributed(tlstm)
+                        elif wrapper == 'bidirectional':
+                            tlstm = Bidirectional(tlstm)
+                    model = tlstm(model)
+                else:
+                    model = tlstm(model)
+
             elif (modelArg['layer'] == 'dense'):
                 #print("DENSE===================================================")
                 model = Dense(modelArg['output'],
                                   activation=modelArg['activation'],
-                                  kernel_initializer=modelArg['kernel_initializer'],
-                                  bias_initializer=modelArg['bias_initializer'],
+                                  #kernel_initializer=modelArg['kernel_initializer'],
+                                  #bias_initializer=modelArg['bias_initializer'],
                                              name=name
                                   )(model)
                 
@@ -247,14 +311,17 @@ class keras_ann(object):
 
     #source: https://stackoverflow.com/questions/40496069/reset-weights-in-keras-layer
     def reset_weights(self, model):
+        print("problem1")
         session = K.get_session()
         for layer in model.layers: 
             if hasattr(layer, 'kernel_initializer'):
                 layer.kernel.initializer.run(session=session)
+            print("problem2")
             if hasattr(layer, 'bias_initializer'):
                 layer.bias.initializer.run(session=session)
+            print("problem3")
 
-    def trainModel(self, paramSets, X, Y, valSplit=0.0, epochs=1, batchSize=None, visualize=False, saveLoc=''):
+    def trainModel(self, paramSets, X, Y, valSplit=0.0, epochs=1, batchSize=None, visualize=False, saveLoc='', defaultInput=True):
 
         callBacks = [EarlyStopping(monitor='val_loss',patience=3,restore_best_weights=True)]
         if (visualize):
@@ -279,7 +346,7 @@ class keras_ann(object):
             print("\n\n=================\nTraining Model " + str(modelNum) + "\n=================\n")
             #print(paramSet, flush=True)
             try:
-                model = self.convModel(paramSet)
+                model = self.convModel(paramSet,defaultInput=defaultInput)
                 print(model.summary())
                 #model.save_weights('temp_weights.h5')
                 
@@ -342,14 +409,14 @@ class keras_ann(object):
             json.dump(paramSet, modelFile)
             modelFile.write("\n")
             print("\n\n=================\nTesting Model " + str(modelNum) + "\n=================\n")
-            #print(paramSet, flush=True)
+            print(paramSet, flush=True)
             try:
                 model = self.convModel(paramSet)
                 print(model.summary())
-                #model.save_weights('temp_weights.h5')
+                model.save_weights('temp_weights.h5')
                 j = 0
                 for trainInd, testInd in Kf.split(X, np.argmax(Y,axis=1)):
-                    
+                    #print(f"fold: {j}")
                     fitHistory = model.fit(X[trainInd], Y[trainInd], batch_size=batchSize, verbose=0, validation_split=valSplit, epochs=epochs,callbacks=callBacks )
                     if (saveModel):
                         modelWeightFile = saveLoc + f'{modelNum}.{j}.weights.h5'
@@ -406,8 +473,10 @@ class keras_ann(object):
 
                     
                     #resultFile.write(str(f1_score(Y[testInd], Ypred, average='macro')) + "|\n")
-                    #model.load_weights('temp_weights.h5')
-                    self.reset_weights(model)
+                    model.load_weights('temp_weights.h5')
+                    #print("reset weights")
+                    #self.reset_weights(model)
+                    #print("reset weights")
                     j+=1
                 
             except Exception as e:
@@ -535,7 +604,68 @@ class keras_ann(object):
                 cidList[tid].append(filename)
         for myid in sorted(ids):
             weights.append(cidList[myid])
+    
+    def saveModelOutput(self, paramSets, X, Y, weights=[], saveLoc='',saveName='output.csv', loadLoc=''):
+        modelNum = 0
+        predictions = []
+        print("modelNum|weightSet|True REM|False REM|False NonREM|True NonREM|Acc|Sens|Spec|Recall|Precision|f1score")
+        for paramSet in paramSets:
+            try:
+                #print("loading Model", paramSet)
+                model = self.convModel(paramSet)
+                weightSet = weights[modelNum]
+                #print("loading: ", loadLoc + weightSet)
+                model.load_weights(loadLoc + weightSet)
+                Ypred = np.zeros((Y.shape[0],Y.shape[1]))
+                Yi = 0
+                #print("predicting")
+                predictions.append(model.predict(X, batch_size=None))
+                for pred in np.argmax(predictions[-1], axis=1):
+                    Ypred[Yi][pred] = 1
+                    Yi += 1
 
+                    
+                tp=tn=fn=fp=0
+                Yi= 0
+                for y in Y:
+                    tp += Ypred[Yi][0]*y[0]
+                    fp += max(Ypred[Yi][0]-y[0],0)
+                    tn += Ypred[Yi][1]*y[1]
+                    fn += max(Ypred[Yi][1]-y[1],0)
+                    Yi+=1
+                       
+                acc=sens=spec=prec=rec=f1=0
+                acc=(tp+tn)/(tp+tn+fp+fn)
+                if (tp+fn > 0):
+                    sens=tp/(tp+fn)
+                if (tn+fp > 0):
+                    spec=tn/(tn+fp)
+                if (tp+fp > 0):
+                    prec=tp/(tp+fp)
+                if (tp+fn > 0):
+                    rec=tp/(tp+fn)
+                if (prec+rec > 0):
+                    f1=2*((prec*rec)/(prec+rec))
+                print(f"{modelNum}|{weightSet}|{tp:.3f}|{fp:.3f}|{fn:.3f}|{tn:.3f}|{acc:.3f}|{sens:.3f}|{spec:.3f}|{rec:.3f}|{prec:.3f}|{f1:.3f}")
+            except Exception as e:
+                print("ERROR",sys.exc_info()[0])
+            modelNum += 1
+        #for prediction in predictions:
+            
+        # TO DO STACK AND PRINT PREDICTIONS
+        #print(np.array(predictions).shape)
+        with open(saveLoc + saveName,'w') as saveFile:
+            for i in range(len(predictions[0])):
+                line = str(np.argmax(Y[i])) + '|' + '|'.join([str(pred) for pred in predictions[0][i]])
+                for j in range(1,5):
+                    line += '|' + '|'.join([str(pred) for pred in predictions[j][i]])
+                line += '\n'
+                saveFile.write(line)
+            #print(line)
+        #allPred = np.concatenate(predictions, axis=1)
+        #print(allPred.shape)
+        #print(predictions[0])
+            
     def buildModelStack(self, X,Y,convModel=[],auto=[],mem=[],dense=[],order=[]):
         #X = np.array(X)
         #Y = np.array(Y)

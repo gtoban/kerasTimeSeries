@@ -46,7 +46,7 @@ def main():
     myData.expandDims()
     myData.normalize()
     dataFiles = ",".join(inputData())
-    cvFolds = 10
+    cvFolds = 0 if saveModel else 10
     valPerc = 0.10
     epochs = 1 if saveModel else 100
     batchSize = 32 if saveModel else int(((myData.record_count*(1-valPerc))/cvFolds)+1)
@@ -59,7 +59,7 @@ def main():
         params.write(f"normMean : {myData.normMean}")
 
     if (saveModel):
-        myAnn.trainModel(modelArgs[:1],myData.data,myData.labels, valSplit=valPerc, epochs=epochs, batchSize=batchSize, visualize=False, saveLoc=myloc)
+        myAnn.trainModel(modelArgs,myData.data,myData.labels, valSplit=valPerc, epochs=epochs, batchSize=batchSize, visualize=False, saveLoc=myloc)
         return
     if (testing):
         myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
