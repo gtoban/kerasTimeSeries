@@ -83,7 +83,7 @@ def addToModels(modelArgs):
                     'return_sequences': True
                     })
                 if bidirectional:
-                    modelArgs[-1]['wrapper'] = 'bidirectional'
+                    modelArgs[-1][-1]['wrapper'] = 'bidirectional'
         units = possibleUnits[int(np.random.randint(len(possibleUnits)))]
         modelArgs[-1].append({
             'layer': 'lstm',
@@ -91,7 +91,7 @@ def addToModels(modelArgs):
             'return_sequences': False
             })
         if bidirectional:
-            modelArgs[-1]['wrapper'] = 'bidirectional'
+            modelArgs[-1][-1]['wrapper'] = 'bidirectional'
         divisor = hiddenUnitsDivisors[np.random.randint(len(hiddenUnitsDivisors))]
         output = maxHiddenUnits[np.random.randint(len(maxHiddenUnits))]
         denseActivation = denseActivations[np.random.randint(len(denseActivations))]
