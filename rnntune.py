@@ -52,7 +52,7 @@ def main():
         myAnn.trainModel(modelArgs,myData.data,myData.labels, valSplit=valPerc, epochs=epochs, batchSize=batchSize, visualize=False, saveLoc=myloc)
         return
     if (testing):
-        myAnn.parameterSearch(modelArgs[:10],myData.data,myData.labels,valSplit=0.10)
+        myAnn.parameterSearch(modelArgs[:1],myData.data,myData.labels,valSplit=0.10)
     else:
         myAnn.parameterSearch(modelArgs,myData.data,myData.labels,numSplits=cvFolds, valSplit=valPerc, epochs=epochs, batchSize=batchSize, saveModel=saveModel, visualize=False, saveLoc=myloc)
 
@@ -60,7 +60,7 @@ def main():
 def addToModels(modelArgs):
     #low freq to high freq
     numOfModels = 100
-    possibleRecurrentLayers = 3
+    possibleRecurrentLayers = 5
     possibleUnits = [int(val) for val in np.linspace(5,600,num=25)]
 
     possibleDenseLayers = 5
@@ -69,11 +69,20 @@ def addToModels(modelArgs):
     denseActivations = ['sigmoid','relu','tanh']
     for i in range(numOfModels):
         numOfRecurrentLayers = int(np.random.randint(1,possibleRecurrentLayers))
+        denseActivation = denseActivations[np.random.randint(len(denseActivations))]
         modelArgs.append([{
             'layer': 'input',
             'shape': (3,10)
         }])
-        bidirectional = True
+        # randomly add a timeDistributed Dense layer here
+        if int(np.random.randint(2)) == 1:
+            modelArgs[-1].append({
+                'layer': 'dense',
+                'output': 10,
+                'activation': denseActivation,
+                'wrapper': 'timedistributed'
+                })
+        bidirectional = True if int(np.random.randint(2)) == 1 else False
         if numOfRecurrentLayers > 1:
             for dummy in range(numOfRecurrentLayers-1):
                 units = possibleUnits[int(np.random.randint(len(possibleUnits)))]
@@ -82,19 +91,40 @@ def addToModels(modelArgs):
                     'units': units,
                     'return_sequences': True
                     })
+                bidirectional = True if int(np.random.randint(2)) == 1 else False
                 if bidirectional:
                     modelArgs[-1][-1]['wrapper'] = 'bidirectional'
+                # randomly add a timeDistributed Dense layer here
+                if int(np.random.randint(2)) == 1:
+                    modelArgs[-1].append({
+                    'layer': 'dense',
+                    'output': units*2 if bidirectional else units,
+                    'activation': denseActivation,
+                    'wrapper': 'timedistributed'
+                    })
         units = possibleUnits[int(np.random.randint(len(possibleUnits)))]
+        timeDist = True if int(np.random.randint(2)) == 1 else False
+        bidirectional = True if int(np.random.randint(2)) == 1 else False
         modelArgs[-1].append({
             'layer': 'lstm',
             'units': units,
-            'return_sequences': False
+            'return_sequences': timeDist
             })
+        
         if bidirectional:
             modelArgs[-1][-1]['wrapper'] = 'bidirectional'
+        if timeDist:
+            modelArgs[-1].append({
+                    'layer': 'dense',
+                    'output': units*2 if bidirectional else units,
+                    'activation': denseActivation,
+                    'wrapper': 'timedistributed'
+                    })
+            modelArgs[-1].append({
+                'layer': 'flatten'})
         divisor = hiddenUnitsDivisors[np.random.randint(len(hiddenUnitsDivisors))]
         output = maxHiddenUnits[np.random.randint(len(maxHiddenUnits))]
-        denseActivation = denseActivations[np.random.randint(len(denseActivations))]
+        
         for dummy in range(0,int(np.random.randint(possibleDenseLayers))):
             output = int(output//divisor) if dummy > 0 and output > 5 else output
             modelArgs[-1].append({

@@ -59,6 +59,7 @@ def main():
     print(candidates.iloc[0]["model"])
     
     print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|kernelInit|biasInit|optimizer|optoptions|kernelSize|numKernels|activation|pool|numDense|sizes")
+    print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|kernelInit|biasInit|optimizer|optoptions|lstms|units|bidirectional|numDense|sizes")
     for index, row in candidates.iterrows():
         modelInfo = json.loads(row['model'])
         modelNum = row['modelNum']
@@ -77,6 +78,9 @@ def main():
         biasInit = 'zeros'
         optimizer = 'adam'
         optoptions = 'none'
+        units = 0
+        lstms = 0
+        bidirectional = 'false'
         for layer in modelInfo:
             if (layer['layer'] == 'conv1d'):
                 numKernels = int(layer['no_filters'])
@@ -101,8 +105,18 @@ def main():
                     optoptions = ','.join([ str(opt) for opt in layer['optimizerOptions']])
                 except:
                     optoptions = 'none'
+            elif ('lstm' in layer['layer']):
+                lstms += 1
+                units = layer['units']
+                try:
+                    if (layer['wrapper'] == 'bidirectional'):
+                        bidirectional = 'true'
+                except:
+                    pass
+                        
                     
-        print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+        #print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+        print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{lstms}|{units}|{bidirectional}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
     topten = candidates.iloc[:4]
     topten[["testID","modelNum","model"]].to_csv("topTwo.csv",sep="|",index=False,quoting=3) #csv.QUOTE_NONE
 main()

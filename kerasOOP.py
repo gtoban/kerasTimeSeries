@@ -242,7 +242,7 @@ class keras_ann(object):
                 tlstm = LSTM(modelArg['units'], return_sequences = modelArg['return_sequences'])
                 if 'wrapper' in modelArg.keys():
                     if modelArg['wrapper'] == 'timedistributed':
-                        model = TimeDistributed(tlstm)(model)
+                        model = TimeDistributed(tlstm) (model)
                     elif modelArg['wrapper'] == 'bidirectional':
                         model = Bidirectional(tlstm)(model)
                 elif 'wrappers' in modelArg.keys():
@@ -257,14 +257,18 @@ class keras_ann(object):
 
             elif (modelArg['layer'] == 'dense'):
                 #print("DENSE===================================================")
-                model = Dense(modelArg['output'],
+                tdense = Dense(modelArg['output'],
                                   activation=modelArg['activation'],
                                   #kernel_initializer=modelArg['kernel_initializer'],
                                   #bias_initializer=modelArg['bias_initializer'],
                                              name=name
-                                  )(model)
+                                  )
                 
-                
+                if 'wrapper' in modelArg.keys():
+                    if modelArg['wrapper'] == 'timedistributed':
+                        model = TimeDistributed(tdense)(model)
+                else:
+                    model = tdense(model)
             elif (modelArg['layer'] == 'maxpool1d'):
                 #print("MAXPOOL===================================================")
                 model = MaxPooling1D(pool_size=modelArg['pool_size'],
