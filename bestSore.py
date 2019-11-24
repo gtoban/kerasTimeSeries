@@ -53,70 +53,84 @@ def main():
     candidates['f1Med'] = candidates[['model','f1score']].groupby('model').transform(np.median)
     candidates['specAvg'] = candidates[['model','Spec']].groupby('model').transform(np.average)
     candidates['sensAvg'] = candidates[['model','Sens']].groupby('model').transform(np.average)
+    candidates['sensMin'] = candidates[['model','Sens']].groupby('model').transform(np.min)
+    candidates['accAvg'] = candidates[['model','Acc']].groupby('model').transform(np.average)
+    candidates['recAvg'] = candidates[['model','Recall']].groupby('model').transform(np.average)
+    candidates['precAvg'] = candidates[['model','Precision']].groupby('model').transform(np.average)
     candidates.drop_duplicates(subset=["model"],inplace=True)
-    candidates=candidates.sort_values(by=['f1Avg'], ascending=False)
+    candidates=candidates.sort_values(by=['sensMin'], ascending=False)
     print(candidates[["testID","modelNum","f1Avg","model"]])
     print(candidates.iloc[0]["model"])
-    
-    print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|kernelInit|biasInit|optimizer|optoptions|kernelSize|numKernels|activation|pool|numDense|sizes")
-    print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|kernelInit|biasInit|optimizer|optoptions|lstms|units|bidirectional|numDense|sizes")
-    for index, row in candidates.iterrows():
-        modelInfo = json.loads(row['model'])
-        modelNum = row['modelNum']
-        testID = row['testID']
-        spec = float(row['specAvg'])
-        sens = float(row['sensAvg'])
-        f1Avg = row['f1Avg']
-        f1Med = row['f1Med']
-        kernelSize = 0
-        numKernels = 0
-        activation = ""
-        pool = 'No'
-        numDense = 0
-        denseNodes = []
-        kernelInit = 'glorot_uniform'
-        biasInit = 'zeros'
-        optimizer = 'adam'
-        optoptions = 'none'
-        units = 0
-        lstms = 0
-        bidirectional = 'false'
-        for layer in modelInfo:
-            if (layer['layer'] == 'conv1d'):
-                numKernels = int(layer['no_filters'])
-                kernelSize = int(layer['kernal_size'])
-                activation = layer['activation']
-                try:
-                    kernelInit = layer['kernel_initializer']
-                    biasInit = layer['bias_initializer']
-                except:
-                    pass
-            elif (layer['layer'] == 'dense'):
-                numDense += 1
-                denseNodes.append(layer['output'])
-            elif ('pool' in layer['layer']):
-                pool = layer['layer']
-            elif('compile' in layer['layer']):
-                try:
-                    optimizer = layer['optimizer']
-                except:
-                    pass
-                try:
-                    optoptions = ','.join([ str(opt) for opt in layer['optimizerOptions']])
-                except:
-                    optoptions = 'none'
-            elif ('lstm' in layer['layer']):
-                lstms += 1
-                units = layer['units']
-                try:
-                    if (layer['wrapper'] == 'bidirectional'):
-                        bidirectional = 'true'
-                except:
-                    pass
+
+    for metric in ['f1Avg','f1Med','sensAvg','sensMin', 'recAvg', 'precAvg', 'accAvg']:
+        top = 4
+        top = top if candidates.shape[0] > top else candidates.shape[0]
+        print()
+        print( '='*20)
+        print( ' '*8,metric)
+        print( '='*20)
+        candidates=candidates.sort_values(by=[metric], ascending=False)
+        print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|acc|sensMin|Recall|Precision|kernelInit|biasInit|optimizer|optoptions|kernelSize|numKernels|activation|pool|numDense|sizes")
+        print(f"testID|modelNum|f1Avg|f1Med|Spec NR|Sens R|acc|sensMin|Recall|Precision|kernelInit|biasInit|optimizer|optoptions|lstms|units|bidirectional|numDense|sizes")
+        
+        for index, row in candidates.iloc[:top].iterrows():
+            modelInfo = json.loads(row['model'])
+            modelNum = row['modelNum']
+            testID = row['testID']
+            spec = float(row['specAvg'])
+            sens = float(row['sensAvg'])
+            f1Avg = row['f1Avg']
+            f1Med = row['f1Med']
+            acc, sensMin, recall, prec = (row['accAvg'],row['sensMin'],row['recAvg'],row['precAvg'])
+            kernelSize = 0
+            numKernels = 0
+            activation = ""
+            pool = 'No'
+            numDense = 0
+            denseNodes = []
+            kernelInit = 'glorot_uniform'
+            biasInit = 'zeros'
+            optimizer = 'adam'
+            optoptions = 'none'
+            units = 0
+            lstms = 0
+            bidirectional = 'false'
+            for layer in modelInfo:
+                if (layer['layer'] == 'conv1d'):
+                    numKernels = int(layer['no_filters'])
+                    kernelSize = int(layer['kernal_size'])
+                    activation = layer['activation']
+                    try:
+                        kernelInit = layer['kernel_initializer']
+                        biasInit = layer['bias_initializer']
+                    except:
+                        pass
+                elif (layer['layer'] == 'dense'):
+                    numDense += 1
+                    denseNodes.append(layer['output'])
+                elif ('pool' in layer['layer']):
+                    pool = layer['layer']
+                elif('compile' in layer['layer']):
+                    try:
+                        optimizer = layer['optimizer']
+                    except:
+                        pass
+                    try:
+                        optoptions = ','.join([ str(opt) for opt in layer['optimizerOptions']])
+                    except:
+                        optoptions = 'none'
+                elif ('lstm' in layer['layer']):
+                    lstms += 1
+                    units = layer['units']
+                    try:
+                        if (layer['wrapper'] == 'bidirectional'):
+                            bidirectional = 'true'
+                    except:
+                        pass
                         
                     
-        #print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
-        print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{lstms}|{units}|{bidirectional}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+            #print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{acc:.3f}|{sensMin:.3f}|{recall:.3f}|{prec:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+            print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{acc:.3f}|{sensMin:.3f}|{recall:.3f}|{prec:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{lstms}|{units}|{bidirectional}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
     topten = candidates.iloc[:4]
     topten[["testID","modelNum","model"]].to_csv("topTwo.csv",sep="|",index=False,quoting=3) #csv.QUOTE_NONE
 main()

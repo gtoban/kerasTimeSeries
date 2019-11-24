@@ -87,7 +87,8 @@ def addToModels(modelArgs):
             for dummy in range(numOfRecurrentLayers-1):
                 units = possibleUnits[int(np.random.randint(len(possibleUnits)))]
                 modelArgs[-1].append({
-                    'layer': 'lstm',
+                    'layer': 'rnn',
+                    'type' : 'gru',
                     'units': units,
                     'return_sequences': True
                     })
@@ -106,7 +107,8 @@ def addToModels(modelArgs):
         timeDist = True if int(np.random.randint(2)) == 1 else False
         bidirectional = True if int(np.random.randint(2)) == 1 else False
         modelArgs[-1].append({
-            'layer': 'lstm',
+            'layer': 'rnn',
+            'type' : 'gru',
             'units': units,
             'return_sequences': timeDist
             })

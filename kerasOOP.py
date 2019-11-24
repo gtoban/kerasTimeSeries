@@ -2,7 +2,7 @@ import numpy as np
 import json
 import tensorflow as tf
 from tensorflow.keras.models import Sequential, Model, load_model
-from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM, TimeDistributed, Bidirectional
+from tensorflow.keras.layers import Dense, Conv1D, Flatten, MaxPooling1D, AveragePooling1D, Input, Concatenate, Embedding,LSTM, GRU, TimeDistributed, Bidirectional
 from tensorflow.keras.callbacks import EarlyStopping, TensorBoard
 from tensorflow.keras import backend as K, metrics, optimizers
 from tensorflow.keras.utils import  plot_model
@@ -220,7 +220,7 @@ class keras_ann(object):
         # For all other layers
         #
         #print("BUIDLING==================================")
-        indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile','lstm','input'],0)
+        indexes = dict.fromkeys(['conv1d','flatten','dense','maxpool1d','avgpool1d','compile','rnn','lstm','input'],0)
         for modelArg in modelArgs:
             indexes[modelArg['layer']] += 1
             name = f"{modelArg['layer']}{indexes[modelArg['layer']]}"
@@ -238,8 +238,11 @@ class keras_ann(object):
                 #print("FLATTEN===================================================")
                 model = Flatten()(model)
 
-            elif (modelArg['layer'] == 'lstm'):
-                tlstm = LSTM(modelArg['units'], return_sequences = modelArg['return_sequences'])
+            elif (modelArg['layer'] == 'rnn'):
+                if (modelArg['type'] == 'lstm'):
+                    tlstm = LSTM(modelArg['units'], return_sequences = modelArg['return_sequences'])
+                elif (modelArg['type'] == 'gru'):
+                    tlstm = GRU(modelArg['units'], return_sequences = modelArg['return_sequences'])
                 if 'wrapper' in modelArg.keys():
                     if modelArg['wrapper'] == 'timedistributed':
                         model = TimeDistributed(tlstm) (model)
