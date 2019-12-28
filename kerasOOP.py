@@ -506,14 +506,14 @@ class keras_ann(object):
         modelNum=0
         for paramSet in paramSets:
             try:
-                #print("loading Model")
+                print("loading Model")
                 model = self.convModel(paramSet)
                 for weightSet in weights[modelNum]:
-                    #print("loading: ", loadLoc + weightSet)
+                    print("loading: ", loadLoc + weightSet)
                     model.load_weights(loadLoc + weightSet)
                     Ypred = np.zeros((Y.shape[0],Y.shape[1]))
                     Yi = 0
-                    #print("predicting")
+                    print("predicting")
                     for pred in np.argmax(model.predict(X, batch_size=None), axis=1):
                         Ypred[Yi][pred] = 1
                         Yi += 1

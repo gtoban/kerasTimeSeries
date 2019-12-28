@@ -131,6 +131,7 @@ def main():
                     
             #print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{acc:.3f}|{sensMin:.3f}|{recall:.3f}|{prec:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{kernelSize:3d}|{numKernels:4d}|{activation:5s}|{pool:3s}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
             print(f"{testID}|{modelNum:3d}|{f1Avg:.3f}|{f1Med:.3f}|{spec:.3f}|{sens:.3f}|{acc:.3f}|{sensMin:.3f}|{recall:.3f}|{prec:.3f}|{kernelInit}|{biasInit}|{optimizer}|{optoptions}|{lstms}|{units}|{bidirectional}|{numDense:3d}|" + ",".join([f"{size}" for size in denseNodes]))
+    candidates=candidates.sort_values(by=['sensAvg'], ascending=False)     
     topten = candidates.iloc[:4]
     topten[["testID","modelNum","model"]].to_csv("topTwo.csv",sep="|",index=False,quoting=3) #csv.QUOTE_NONE
 main()
