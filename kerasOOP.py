@@ -158,6 +158,7 @@ class ann_data(object):
             self.normSTD = normSTD
             self.normMean = normMean
         self.data = np.divide(np.subtract(self.data,self.normMean), self.normSTD)
+        
     def getFreqBand(freqBand):
         if (freqBand == 'delta'):
             return [None, 3.5, 2]
@@ -545,43 +546,24 @@ class keras_ann(object):
                 print("ERROR",sys.exc_info()[0])
             modelNum += 1
 
-    def printModel(self, paramSets, weights=[], printLoc="", loadLoc="", X=None,Y=None):
+    def printModel(self, paramSet, weightLoc, X=None):
         modelNum=0
-        for paramSet in paramSets:
-            try:
-                print("paramSet")
-                model = self.convModel(paramSet)
-                print(paramSet)
-                for weightSet in weights[modelNum]:
-                    #pass
-                    print("loading: ", loadLoc + weightSet)
-                    #model = load_model(loadLoc + weightSet)
-                    print()
-                    print("==================================")
-                    print("loading: ", loadLoc + weightSet)
-                    print("==================================")
-                    print()
-                    model.load_weights(loadLoc + weightSet)
-                    model.predict(X, batch_size=None)
-                    #for modelArg in paramSet[1:]:
-                    #    if (modelArg['layer'] == 'conv1d'):
-                    #        self.compileModel(model,modelArg)
-                    to_file = printLoc+f'model.{modelNum}.{weightSet}.png'
-                    print("print: ", to_file)
-                    #plot_model(model, to_file=to_file)
-                    #print(model.layers[0].get_config())
-                    #print(model.to_json())
-                    print(model.summary())
-                    print("===========")
-                    print("layer:",model.get_layer('conv1d1').get_weights())
-                    #for layer in model.layers:
-                        #print(layer.get_weights())
-                    #    print(layer.get_weights())
-                    return
-            except Exception as e:
-                print("ERROR",sys.exc_info()[0])
-                print(e)
-            modelNum += 1
+        try:
+            print("paramSet")
+            #print(paramSet)
+            model = self.convModel(paramSet)
+            print(paramSet)
+            #pass
+            print("loading: ", weightLoc)
+            model.load_weights(weightLoc)
+            model.predict(X, batch_size=None)
+            return model.get_layer('conv1d1').get_weights()
+            
+        except Exception as e:
+            print("ERROR",sys.exc_info()[0])
+            print(e)
+            return None
+        modelNum += 1
 
 
     def getNorm(self, myDir):
